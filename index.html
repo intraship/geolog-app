@@ -1226,31 +1226,26 @@ function renderSampleWizard(){
 }
 
 async function photoRef(file){
-  let latitude=null, longitude=null, accuracyMeters=null, gpsSource='none';
-  try{
-    const p = await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{
-      enableHighAccuracy:true, timeout:10000, maximumAge:0
-    }));
-    latitude = p.coords.latitude;
-    longitude = p.coords.longitude;
-    accuracyMeters = p.coords.accuracy;
-    gpsSource = 'device';
-  }catch{}
-  return {
-    photoId:crypto.randomUUID(),
-    pointId:currentBoring.header.pointId || '',
-    sampleNumber:currentSample.number,
-    topDepth:currentSample.topDepth,
-    bottomDepth:currentSample.bottomDepth,
-    localAssetRef:file.name,
-    fileName:file.name,
-    gpsSource,
-    latitude,
-    longitude,
-    accuracyMeters,
-    capturedAtDevice:nowETInput(),
-    exifCapturedAt:null
-  };
+  // Skip geolocation, store photo as DataURL
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      resolve({
+        photoId: crypto.randomUUID(),
+        pointId: currentBoring.header.pointId || '',
+        sampleNumber: currentSample.number,
+        topDepth: currentSample.topDepth,
+        bottomDepth: currentSample.bottomDepth,
+        localAssetRef: file.name,
+        fileName: file.name,
+        photoDataUrl: e.target.result, // Store DataURL
+        capturedAtDevice: nowETInput(),
+        exifCapturedAt: null
+      });
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 function maybeAutoGW(sample){
@@ -1576,11 +1571,49 @@ $('exportGint').onclick = async()=>{
   XLSX.writeFile(buildGintWorkbook(borings,settings), `GeoLog_Master_${new Date().toISOString().slice(0,10)}.xlsx`);
 };
 
+// Export photos as ZIP file
 $('exportPhotos').onclick = async()=>{
   const borings = await DB.all('borings');
   if(!borings.length) return toast('No borings to export',true);
-  const settings = await getSettings();
-  XLSX.writeFile(buildPhotoWorkbook(borings,settings), `GeoLog_Photo_Log_${new Date().toISOString().slice(0,10)}.xlsx`);
+  // Collect all photos
+  const photos = [];
+  borings.forEach(b => {
+    b.samples.forEach(s => {
+      (s.photos||[]).forEach(p => {
+        if(p.photoDataUrl) {
+          photos.push({
+            name: `${b.header.pointId}_${s.number}_${p.fileName}`,
+            dataUrl: p.photoDataUrl
+          });
+        }
+      });
+    });
+  });
+  if(!photos.length) return toast('No photos found',true);
+  // Use JSZip to create ZIP
+  toast('Preparing ZIP...');
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+  script.onload = async () => {
+    const zip = new JSZip();
+    photos.forEach(p => {
+      // Convert DataURL to Blob
+      const arr = p.dataUrl.split(','), mime = arr[0].match(/:(.*?);/)[1];
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while(n--) u8arr[n] = bstr.charCodeAt(n);
+      zip.file(p.name, new Blob([u8arr], {type: mime}));
+    });
+    zip.generateAsync({type:'blob'}).then(blob => {
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `GeoLog_Photos_${new Date().toISOString().slice(0,10)}.zip`;
+      link.click();
+      toast('ZIP ready for download');
+    });
+  };
+  document.body.appendChild(script);
 };
 
 (async function(){
