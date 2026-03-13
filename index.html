@@ -1,0 +1,1593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>GeoLogger v0.75</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    :root{
+      --bg:#161614;--panel:#1f1f1c;--line:#3a3a34;--text:#f0ede6;--muted:#a39c90;
+      --accent:#f5820a;--green:#4caf7d;--red:#e05050
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      background:var(--bg);color:var(--text)
+    }
+    .topbar{
+      display:flex;justify-content:space-between;align-items:center;padding:16px 14px;
+      border-bottom:1px solid var(--line);position:sticky;top:0;
+      background:rgba(22,22,20,.96);z-index:50
+    }
+    .logo{font-weight:800;letter-spacing:2px;color:var(--accent)}
+    .sub{font-size:12px;color:var(--muted)}
+    .version{padding:6px 14px;color:var(--accent);font-weight:700}
+    .main{padding:12px;max-width:780px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+    .screen{display:none}
+    .screen.active{display:flex;flex-direction:column;gap:12px}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px}
+    h3,h4{margin:0 0 10px}
+    label{
+      display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted);margin-bottom:10px
+    }
+    input,textarea,button,select{font:inherit}
+    input,textarea,select{
+      background:#11110f;color:var(--text);border:1px solid var(--line);
+      border-radius:12px;padding:12px
+    }
+    textarea{min-height:78px}
+    button{
+      background:#2a2a26;color:var(--text);border:1px solid var(--line);
+      border-radius:12px;padding:13px 14px;cursor:pointer
+    }
+    button.primary{background:var(--accent);border-color:var(--accent);color:white}
+    button.wide{width:100%;margin-bottom:10px}
+    .row{display:flex;gap:8px;align-items:center}
+    .between{justify-content:space-between}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    .stack{display:flex;flex-direction:column;gap:10px}
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+    .stat{background:#171715;border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}
+    .num{font-size:28px;font-weight:800;color:var(--accent)}
+    .lbl{font-size:11px;color:var(--muted)}
+    .pill{
+      display:inline-flex;padding:5px 10px;border-radius:999px;background:#11110f;
+      border:1px solid var(--line);color:var(--muted);font-size:12px
+    }
+    .bottom-actions{
+      position:sticky;bottom:0;display:flex;gap:8px;flex-wrap:wrap;
+      background:rgba(22,22,20,.96);padding:10px 0 2px
+    }
+    .sticky{
+      position:sticky;top:98px;z-index:30;background:rgba(22,22,20,.96);padding:4px 0
+    }
+    .preview{
+      margin-top:8px;border:1px solid var(--accent);background:#11110f;
+      padding:12px;border-radius:12px;white-space:pre-wrap
+    }
+    .item{
+      background:#171715;border:1px solid var(--line);border-radius:12px;padding:12px
+    }
+    .item .title{font-weight:700;margin-bottom:4px}
+    .item .small{font-size:12px;color:var(--muted);margin-top:4px}
+    .choice-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:10px 0}
+    .choice.selected{border-color:var(--accent);color:var(--accent)}
+    .color-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:10px 0}
+    .swatch{height:48px;border-radius:12px;border:2px solid transparent}
+    .swatch.selected{border-color:#fff}
+    .hidden{display:none!important}
+    .toast{
+      position:fixed;left:50%;transform:translateX(-50%);bottom:16px;background:var(--green);
+      color:#fff;padding:10px 16px;border-radius:999px;opacity:0;transition:opacity .2s;
+      pointer-events:none;z-index:80
+    }
+    .toast.show{opacity:1}
+    .casing-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px}
+    .compact-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    @media (max-width:640px){
+      .grid2,.grid3,.stats{grid-template-columns:1fr 1fr}
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <div class="logo">GEOLOG</div>
+      <div class="sub">iPhone-ready field logger</div>
+    </div>
+  </header>
+
+  <div class="version">VERSION: v0.75 · Offline Download Only</div>
+
+  <main class="main">
+    <section id="home" class="screen active">
+      <div class="card">
+        <div class="stats">
+          <div class="stat"><div id="statBorings" class="num">0</div><div class="lbl">Borings</div></div>
+          <div class="stat"><div id="statSamples" class="num">0</div><div class="lbl">Samples</div></div>
+          <div class="stat"><div id="statUndist" class="num">0</div><div class="lbl">Undisturbed</div></div>
+          <div class="stat"><div id="statPhotos" class="num">0</div><div class="lbl">Photos</div></div>
+        </div>
+        <button id="newBoring" class="primary wide">New Boring</button>
+        <button id="exportGint" class="wide">Export gINT Workbook</button>
+        <button id="exportPhotos" class="wide">Export Photo Log</button>
+        <button id="openSettings" class="wide">Report Info</button>
+      </div>
+      <div class="card">
+        <h3>My Borings</h3>
+        <div id="boringList" class="stack"></div>
+      </div>
+    </section>
+
+    <section id="settings" class="screen">
+      <div class="card">
+        <div class="row between">
+          <h3>Report Info</h3>
+          <button id="toggleInfo">Show Info</button>
+        </div>
+
+        <div class="grid2">
+          <label>Inspector <input id="cfgInspector" placeholder="Inspector Name"></label>
+          <label>Driller <input id="cfgDriller" placeholder="Driller Name"></label>
+          <label>Helper <input id="cfgHelper" placeholder="Helper Name"></label>
+          <label>Rig # <input id="cfgRigNo" placeholder="14"></label>
+          <label>Rig Type <input id="cfgRigType" placeholder="CME-55"></label>
+          <label>Rig Condition <input id="cfgRigCondition" placeholder="Good"></label>
+          <label>Weather <input id="cfgWeather" placeholder="37°F / Sunny"></label>
+          <label>Location <input id="cfgLocation" placeholder="Penns Grove Auburn Rd / Rdwy"></label>
+        </div>
+
+        <div id="infoFields" class="hidden">
+          <div class="grid2">
+            <label>Project <input id="cfgProject" placeholder="NJ Turnpike 1 to 4 Capacity Enhancements Program"></label>
+            <label>Contract No. <input id="cfgContractNo" placeholder="OPS No. T3839"></label>
+            <label>Contractor <input id="cfgContractor" placeholder="Craig Geotechnical Drilling"></label>
+            <label>Engineer <input id="cfgEngineer" placeholder="Anthony Crincoli"></label>
+            <label>Roadway <input id="cfgRoadway" placeholder="NJ Turnpike"></label>
+          </div>
+        </div>
+
+        <div class="bottom-actions">
+          <button id="homeFromSettings">Home</button>
+          <button id="saveDefaults" class="primary">Save Defaults</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="boring" class="screen">
+      <div class="card">
+        <div class="row between">
+          <h3>Boring Header</h3>
+          <span id="boringTag" class="pill">Draft</span>
+        </div>
+
+        <div class="grid2">
+          <label>Point ID* <input id="bhPointId" placeholder="BR3-17"></label>
+          <label>Driller <input id="bhDriller" placeholder="Driller Name"></label>
+          <label>Helper <input id="bhHelper" placeholder="Helper Name"></label>
+          <label>Inspector <input id="bhInspector" placeholder="Inspector Name"></label>
+          <label>Rig # <input id="bhRigNo" placeholder="14"></label>
+          <label>Rig Type <input id="bhRigType" placeholder="CME-55"></label>
+          <label>Hole Depth <input id="bhHoleDepth" type="number" step="0.5" placeholder="102"></label>
+          <label>Weather <input id="bhWeather" placeholder="37°F / Sunny"></label>
+          <label>GW Depth <input id="bhGwDepth" type="number" step="0.5" placeholder="17.5"></label>
+          <label>GW DateTime <input id="bhGwDateTime" type="datetime-local"></label>
+        </div>
+
+        <div style="font-size:13px;color:var(--muted);margin-bottom:6px">General Remarks</div>
+        <div id="remarkButtons" class="choice-grid"></div>
+        <label>Additional Remarks <textarea id="bhRemarks" placeholder="Remarks"></textarea></label>
+      </div>
+
+      <div class="card">
+        <div class="row between">
+          <h3>Samples</h3>
+          <span id="sampleCount" class="pill">0</span>
+        </div>
+        <div id="sampleList" class="stack"></div>
+      </div>
+
+      <div class="card">
+        <div class="row between">
+          <h3>Casing</h3>
+          <span id="casingCount" class="pill">0</span>
+        </div>
+        <div id="casingList" class="stack"></div>
+      </div>
+
+      <div class="bottom-actions">
+        <button id="homeFromBoring">Home</button>
+        <button id="saveBoring" class="primary">Save Header</button>
+        <button id="editCasing">Edit Casing</button>
+        <button id="addSample" class="primary">Add Sample</button>
+        <button id="addShelby">Add Shelby</button>
+        <button id="saveExit" class="primary hidden">Save & Exit</button>
+      </div>
+    </section>
+
+    <section id="casing" class="screen">
+      <div class="card">
+        <div class="row between">
+          <h3>Casing Entries</h3>
+          <span class="pill">Depth / Blows</span>
+        </div>
+        <div id="casingRows" class="stack"></div>
+        <button id="addCasingRow">+ Add Row</button>
+        <div class="bottom-actions">
+          <button id="backFromCasing">Back</button>
+          <button id="saveCasing" class="primary">Save Casing</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="sample" class="screen">
+      <div class="sticky">
+        <div class="pill">Material_and_Remarks</div>
+        <div id="samplePreview" class="preview">—</div>
+      </div>
+
+      <div class="card">
+        <div class="row between">
+          <h3 id="sampleTitle">Sample</h3>
+          <span id="sampleStepTag" class="pill">Step</span>
+        </div>
+
+        <div class="grid3">
+          <label>Number <input id="sNumber"></label>
+          <label>Top <input id="sTop" type="number" step="0.5"></label>
+          <label>Bottom <input id="sBottom" type="number" step="0.5"></label>
+        </div>
+
+        <div id="sampleBody"></div>
+      </div>
+
+      <div class="bottom-actions">
+        <button id="prevStep">Back</button>
+        <button id="nextStep" class="primary">Next</button>
+        <button id="finishNow" class="hidden">Finish</button>
+        <button id="saveSample" class="primary hidden">Save Sample</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+const DEFAULTS = {
+  project:'NJ Turnpike 1 to 4 Capacity Enhancements Program',
+  contractNo:'OPS No. T3839',
+  contractor:'Craig Geotechnical Drilling',
+  engineer:'Anthony Crincoli',
+  roadway:'NJ Turnpike',
+  inspector:'',
+  driller:'',
+  helper:'',
+  rigNo:'',
+  rigType:'',
+  rigCondition:'',
+  weather:'',
+  location:''
+};
+
+const REMARK_OPTIONS = [
+  'Introduced drilling fluid (Bentonite) at 10 feet.',
+  'Groundwater encountered during drilling.',
+  'Borehole backfilled with soil cuttings and grouted upon completion.',
+  'Borehole backfilled with grout and patched with asphalt upon completion.'
+];
+
+let remarkSelections = [];
+
+const SHEETS = {
+  PROJECT:['Name','Number','Purpose','Structure_Number','Location','Roadway','Resident_Engineer'],
+  POINT:['PointID','Section','HoleDepth','Contractor','Station','Offset','Rig_Number','Rig_Type','Driller','Helper','Elevation','Zero_of_Boring_Log','MLW_Elevation','Drilling_Mud_Unit_Wt','Casing_Size','Casing_Hammer_Wt','Casing_Hammer_Fall','Ordinary_Dry_Samples_OD','Ordinary_Dry_Samples_ID','Ordinary_Dry_Samples_Hammer_Wt','Ordinary_Dry_Samples_Hammer_Fall','Undisturbed_Samples_Type','Undisturbed_Samples_Length','Undisturbed_Samples_OD','Undisturbed_Samples_ID','Inspector','General_Remarks','Location','Surface_Note','North','East','Plunge'],
+  CASING:['PointID','Depth','Blows'],
+  'GROUND WATER READINGS':['PointID','DateTime','Depth'],
+  LITHOLOGY:['PointID','Depth','Top','Strata_Description'],
+  'PAY QUANTITIES':['PointID','Boring_2','Boring_3','Boring_4','Boring_Addl_Size_1','Boring_Addl_Size_1_Quantity','Boring_Addl_Size_2','Boring_Addl_Size_2_Quantity','Number_Ord_Dry_Samples','Number_Undist_Dry_Samples','Addl_Sample_Type','Number_Addl_Sample_Type','Rock_Core_138','Rock_Core_158','Rock_Core_Addl_Size','Rock_Core_Addl_Size_Quantity'],
+  PROGRESS:['PointID','DateTime','Time_Finished','Weather','Depth_Reached'],
+  SAMPLE:['PointID','Depth','Bottom','Recovery','Number','Blows_1st','Blows_2nd','Blows_3rd','Blows_4th','Material_and_Remarks']
+};
+
+const PHOTO_SHEETS = {
+  'PHOTO FOLDERS':['Folder_ID','Project','PointID','Inspector','Folder_Name','Folder_Path','Folder_Link','Created_At','Notes'],
+  'PHOTO LOG':['SubmissionID','PointID','Sample_Number','Top_Depth','Bottom_Depth','Photo_ID','File_Name','Folder_ID','Folder_Link','Capture_Time_Device','Capture_Time_EXIF','Latitude','Longitude','Accuracy_Meters','GPS_Source','Inspector','Notes']
+};
+
+const COLORS = [
+  ['Brown','#6b4f3a'],['Dark Brown','#4c3526'],['Light Brown','#9b7b5d'],['Tan','#c49a6c'],
+  ['Yellow Brown','#b88a2d'],['Reddish Brown','#8b4b35'],['Black','#2b2b2b'],['Dark Gray','#4f4f4f'],
+  ['Gray','#7b7b7b'],['Light Gray','#b6b6b6'],['Olive','#7a7b49'],['Green Gray','#7c8573'],
+  ['Orange','#f5820a'],['White','#ece8df'],['Mottled','linear-gradient(135deg,#7b7b7b,#c49a6c,#8b4b35)']
+];
+
+const PRIMARY = ['GRAVEL','SAND','SILT/CLAY','Same as above'];
+const SILTCLAY = ['Silt','Clayey SILT','SILT & CLAY','CLAY & SILT','Silty CLAY','CLAY'];
+const GRADS = ['c-m-f','m-f','f','c','m','c-f'];
+const QTY = [['trace','<10%'],['little','10<20%'],['some','20<30%'],['and','45<55%']];
+const MOIST = ['dry','moist','wet'];
+
+let currentBoring = null;
+let currentSample = null;
+let sampleStep = 0;
+let editingSampleIndex = -1;
+let casingDraftRows = [];
+
+const $ = id => document.getElementById(id);
+const fmt = new Intl.DateTimeFormat('en-US',{
+  timeZone:'America/New_York',
+  year:'numeric',month:'2-digit',day:'2-digit',
+  hour:'numeric',minute:'2-digit',second:'2-digit',hour12:true
+});
+
+const DB = {
+  async open(){
+    return new Promise((res,rej)=>{
+      const r = indexedDB.open('geolog-v71-single',1);
+      r.onupgradeneeded = () => {
+        const d = r.result;
+        ['settings','borings'].forEach(n=>{
+          if(!d.objectStoreNames.contains(n)) d.createObjectStore(n,{keyPath:'id'});
+        });
+      };
+      r.onsuccess = ()=>res(r.result);
+      r.onerror = ()=>rej(r.error);
+    });
+  },
+  async put(store,id,value){
+    const d = await this.open();
+    return new Promise((res,rej)=>{
+      const tx = d.transaction(store,'readwrite');
+      tx.objectStore(store).put({id,value});
+      tx.oncomplete = ()=>res();
+      tx.onerror = ()=>rej(tx.error);
+    });
+  },
+  async get(store,id){
+    const d = await this.open();
+    return new Promise((res,rej)=>{
+      const tx = d.transaction(store,'readonly');
+      const r = tx.objectStore(store).get(id);
+      r.onsuccess = ()=>res(r.result ? r.result.value : null);
+      r.onerror = ()=>rej(r.error);
+    });
+  },
+  async all(store){
+    const d = await this.open();
+    return new Promise((res,rej)=>{
+      const tx = d.transaction(store,'readonly');
+      const r = tx.objectStore(store).getAll();
+      r.onsuccess = ()=>res(r.result.map(x=>x.value));
+      r.onerror = ()=>rej(r.error);
+    });
+  }
+};
+
+function toast(msg,error=false){
+  const el = $('toast');
+  el.textContent = msg;
+  el.style.background = error ? 'var(--red)' : 'var(--green)';
+  el.classList.add('show');
+  clearTimeout(window.__tt);
+  window.__tt = setTimeout(()=>el.classList.remove('show'),2400);
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $(id).classList.add('active');
+  window.scrollTo({top:0});
+}
+
+function fmtET(v){
+  if(!v) return '';
+  try{ return fmt.format(new Date(v)).replace(',',''); }
+  catch{ return String(v); }
+}
+
+function nowETInput(){
+  const p = new Intl.DateTimeFormat('en-CA',{
+    timeZone:'America/New_York',
+    year:'numeric',month:'2-digit',day:'2-digit',
+    hour:'2-digit',minute:'2-digit',hour12:false
+  }).formatToParts(new Date());
+  const g = t => p.find(x=>x.type===t)?.value || '';
+  return `${g('year')}-${g('month')}-${g('day')}T${g('hour')}:${g('minute')}`;
+}
+
+function isGB(n){ return String(n||'').toUpperCase().startsWith('GB-'); }
+function isShelby(n){ return String(n||'').toUpperCase().startsWith('U-'); }
+function num(n){ const m=String(n||'').match(/-(\d+)/); return m?parseInt(m[1],10):0; }
+
+function nextSuggestion(samples){
+  const usedRanges = new Set(samples.map(s=>`${s.topDepth}-${s.bottomDepth}`));
+  const arr = [
+    {number:'GB-1',top:0,bottom:2},
+    {number:'GB-2',top:2,bottom:4},
+    {number:'GB-3',top:4,bottom:6},
+    {number:'S-1',top:6,bottom:8},
+    {number:'S-2',top:8,bottom:10},
+    {number:'S-3',top:10,bottom:12},
+    {number:'S-4',top:15,bottom:17}
+  ];
+  for(const s of arr){
+    if(!usedRanges.has(`${s.top}-${s.bottom}`)) return s;
+  }
+  const usedStarts = new Set(samples.map(s=>Number(s.topDepth)));
+  let top = 20;
+  while(usedStarts.has(top)) top += 5;
+  return {
+    number:`S-${Math.max(4,...samples.filter(s=>String(s.number).startsWith('S-')).map(s=>num(s.number)))+1}`,
+    top,
+    bottom:top+2
+  };
+}
+
+function nextShelbySuggestion(samples){
+  const prev = [...samples].sort((a,b)=>a.topDepth-b.topDepth).slice(-1)[0];
+  const top = prev ? Number(prev.bottomDepth) : 0;
+  return {
+    number:`U-${Math.max(0,...samples.filter(s=>isShelby(s.number)).map(s=>num(s.number)))+1}`,
+    top,
+    bottom:top+2
+  };
+}
+
+function familyDisplay(f){
+  if(f==='SAND') return 'Sand';
+  if(f==='GRAVEL') return 'Gravel';
+  return f;
+}
+function formatSiltClayClass(value,isPrimary=false){
+  const mapPrimary = {
+    'Silt':'SILT',
+    'Clayey SILT':'CLAYEY SILT',
+    'SILT & CLAY':'SILT & CLAY',
+    'CLAY & SILT':'CLAY & SILT',
+    'Silty CLAY':'SILTY CLAY',
+    'CLAY':'CLAY'
+  };
+  const mapSecondary = {
+    'Silt':'Silt',
+    'Clayey SILT':'Clayey SILT',
+    'SILT & CLAY':'Silt & Clay',
+    'CLAY & SILT':'Clay & Silt',
+    'Silty CLAY':'Silty CLAY',
+    'CLAY':'Clay'
+  };
+  return (isPrimary ? mapPrimary[value] : mapSecondary[value]) || value || (isPrimary ? 'SILT/CLAY' : 'Silt/Clay');
+}
+
+function choiceGrid(options, selected, onPick){
+  const wrap = document.createElement('div');
+  wrap.className = 'choice-grid';
+  options.forEach(opt=>{
+    const value = Array.isArray(opt) ? opt[0] : opt;
+    const label = Array.isArray(opt) ? `${opt[0]} ${opt[1]}` : opt;
+    const b = document.createElement('button');
+    b.className = 'choice' + (selected===value ? ' selected' : '');
+    b.textContent = label;
+    b.onclick = () => onPick(selected===value ? null : value);
+    wrap.appendChild(b);
+  });
+  return wrap;
+}
+
+function renderColorGrid(){
+  const wrap = document.createElement('div');
+  wrap.className = 'color-grid';
+  COLORS.forEach(([name,style])=>{
+    const b = document.createElement('button');
+    b.className = 'swatch' + (currentSample.primaryColor===name ? ' selected' : '');
+    b.title = name;
+    b.style.background = style;
+    b.onclick = ()=>{
+      currentSample.primaryColor = currentSample.primaryColor===name ? '' : name;
+      renderSampleWizard();
+    };
+    wrap.appendChild(b);
+  });
+  return wrap;
+}
+
+function primaryText(s){
+  if(s.sameAsAbove) return 'Same as above';
+
+  const base =
+    s.primaryFamily==='SILT/CLAY'
+      ? `${s.primaryColor || ''} ${s.primaryClass || 'SILT/CLAY'}`.trim()
+      : `${s.primaryColor || ''} ${s.primaryClass || ''} ${s.primaryFamily || ''}`.replace(/\s+/g,' ').trim();
+
+  if(isGB(s.number) && s.number==='GB-1' && s.asphaltThickness){
+    return `${s.asphaltThickness} ASPHALT; ${base}`;
+  }
+
+  return base;
+}
+
+function secText(sec){
+  if(!sec || !sec.family || sec.family==='None') return '';
+  if(sec.family==='SILT/CLAY'){
+    return `${sec.qty || ''} ${formatSiltClayClass(sec.classification,false)}`.replace(/\s+/g,' ').trim();
+  }
+  return `${sec.qty || ''} ${sec.classification || ''} ${familyDisplay(sec.family)}`.replace(/\s+/g,' ').trim();
+}
+
+function secondaryReady(sec){
+  if(!sec) return true;
+  if(!sec.family) return false;
+  if(sec.family==='None') return true;
+  if(!sec.qty) return false;
+  if(sec.family==='SILT/CLAY') return !!sec.classification;
+  if(sec.family==='SAND' || sec.family==='GRAVEL') return !!sec.classification;
+  return true;
+}
+
+function buildDesc(s){
+  const components = [];
+
+  const primary = (primaryText(s) || '').replace(/\s+/g,' ').trim();
+  if(primary) components.push(primary);
+
+  const sec1 = secText(s.secondary1);
+  if(sec1) components.push(sec1);
+
+  const sec2 = secText(s.secondary2);
+  if(sec2) components.push(sec2);
+
+  if((s.modifiers||[]).includes('mottled') && components.length){
+    components[components.length-1] += ' (mottled)';
+  }
+
+  const tail = [
+    ...(s.modifiers||[]).filter(m=>m!=='mottled'),
+    s.moisture
+  ].filter(Boolean);
+
+  let out = [...components, ...tail].join(', ').replace(/\s{2,}/g,' ').trim();
+
+  if(s.ppTsf!==null && s.ppTsf!=='' && s.ppTsf!==undefined){
+    out += `\nPP= ${s.ppTsf} tsf`;
+  }
+
+  return out;
+}
+
+function prevSample(s,samples){
+  const sorted = [...samples].sort((a,b)=>a.topDepth-b.topDepth);
+  const i = sorted.findIndex(x=>x.number===s.number);
+  return i>0 ? sorted[i-1] : null;
+}
+
+function renderRemarkButtons(){
+  const wrap = $('remarkButtons');
+  if(!wrap) return;
+  wrap.innerHTML = '';
+  REMARK_OPTIONS.forEach(opt=>{
+    const b = document.createElement('button');
+    b.className = 'choice' + (remarkSelections.includes(opt) ? ' selected' : '');
+    b.textContent = opt;
+    b.onclick = ()=>{
+      if(remarkSelections.includes(opt)) remarkSelections = remarkSelections.filter(x=>x!==opt);
+      else remarkSelections.push(opt);
+      renderRemarkButtons();
+    };
+    wrap.appendChild(b);
+  });
+}
+
+function orderedRemarks(){
+  const picked = REMARK_OPTIONS
+    .filter(r=>remarkSelections.includes(r))
+    .map((r,i)=>`${i+1}. ${r}`);
+  const extra = $('bhRemarks').value.trim();
+  return [...picked, extra].filter(Boolean).join('\n');
+}
+
+function lithRows(b){
+  const rows = [];
+  const samples = [...b.samples].sort((a,b)=>a.topDepth-b.topDepth);
+  if(!samples.length) return rows;
+
+  let currentTop = Number(samples[0].topDepth) || 0;
+  const first = samples[0];
+
+  const strataKey = s => {
+    if(s.sameAsAbove) return 'Same as above';
+    if(s.primaryFamily==='SILT/CLAY') return 'SILT/CLAY';
+    return s.primaryFamily || '';
+  };
+
+  if(first.number==='GB-1' && first.asphaltThickness){
+    const thicknessFt = (parseFloat(String(first.asphaltThickness).replace('"','')) || 0) / 12;
+    if(thicknessFt > 0){
+      rows.push([b.header.pointId, Number(thicknessFt.toFixed(2)), 0, 'ASPHALT']);
+      currentTop = Number(thicknessFt.toFixed(2));
+    }
+  }
+
+  let activeKey = strataKey(first);
+
+  for(let i=1;i<samples.length;i++){
+    const prev = samples[i-1];
+    const s = samples[i];
+    const thisKey = s.sameAsAbove ? activeKey : strataKey(s);
+
+    if(thisKey !== activeKey){
+      const sm = String(s.number||'').toUpperCase().match(/^S-(\d+)$/);
+      const breakDepth = sm && parseInt(sm[1],10) >= 4
+        ? Number((Number(prev.bottomDepth)+0.5).toFixed(2))
+        : Number(prev.bottomDepth);
+      rows.push([b.header.pointId, breakDepth, currentTop, activeKey]);
+      activeKey = thisKey;
+      currentTop = breakDepth;
+    }
+  }
+
+  rows.push([b.header.pointId, b.header.holeDepth || '', currentTop, activeKey]);
+  return rows;
+}
+
+function payQty(samples){
+  let ordinary = 0, undist = 0;
+  samples.forEach(s=>{
+    const p = String(s.number||'').split('-')[0].toUpperCase();
+    if(p==='U') undist++;
+    if(p==='GB' || p==='S') ordinary++;
+  });
+  return {ordinary, undist};
+}
+
+function maxSampleBottom(b){
+  const vals = b.samples.map(s=>Number(s.bottomDepth)).filter(v=>!isNaN(v));
+  return vals.length ? Math.max(...vals) : null;
+}
+
+function nextCasingDepth(){
+  if(!casingDraftRows.length) return 0;
+  const nums = casingDraftRows.map(r=>Number(r.depth)).filter(v=>!isNaN(v));
+  return nums.length ? Math.max(...nums)+1 : 0;
+}
+
+async function getSettings(){
+  return await DB.get('settings','defaults') || structuredClone(DEFAULTS);
+}
+
+async function hydrateHome(){
+  const s = await getSettings();
+  $('cfgProject').value = s.project || '';
+  $('cfgContractNo').value = s.contractNo || '';
+  $('cfgContractor').value = s.contractor || '';
+  $('cfgEngineer').value = s.engineer || '';
+  $('cfgRoadway').value = s.roadway || '';
+  $('cfgInspector').value = s.inspector || '';
+  $('cfgDriller').value = s.driller || '';
+  $('cfgHelper').value = s.helper || '';
+  $('cfgRigNo').value = s.rigNo || '';
+  $('cfgRigType').value = s.rigType || '';
+  $('cfgRigCondition').value = s.rigCondition || '';
+  $('cfgWeather').value = s.weather || '';
+  $('cfgLocation').value = s.location || '';
+
+  const borings = await DB.all('borings');
+
+  $('statBorings').textContent = borings.length;
+  $('statSamples').textContent = borings.reduce((a,b)=>a+b.samples.length,0);
+  $('statUndist').textContent = borings.reduce((a,b)=>a+b.samples.filter(s=>isShelby(s.number)).length,0);
+  $('statPhotos').textContent = borings.reduce((a,b)=>a+b.samples.reduce((x,s)=>x+(s.photos||[]).length,0),0);
+
+  $('boringList').innerHTML = '';
+  if(!borings.length){
+    $('boringList').innerHTML = '<div class="item">No borings yet.</div>';
+    return;
+  }
+
+  borings.forEach(b=>{
+    const undist = (b.samples||[]).filter(s=>String(s.number||'').toUpperCase().startsWith('U-')).length;
+    const photos = (b.samples||[]).reduce((a,s)=>a+((s.photos||[]).length),0);
+
+    const div = document.createElement('div');
+    div.className = 'item';
+    div.innerHTML = `
+      <div class="title">${b.header.pointId}</div>
+      <div>${b.samples.length} samples · ${undist} undisturbed · ${photos} photos · Hole ${b.header.holeDepth || '—'} ft</div>
+    `;
+
+    const row = document.createElement('div');
+    row.className = 'compact-actions';
+
+    const open = document.createElement('button');
+    open.textContent = 'Open';
+    open.onclick = ()=>openBoring(b.id || b.header.pointId);
+
+    const exp = document.createElement('button');
+    exp.textContent = 'Export';
+    exp.onclick = async ()=>{
+      const wb = buildGintWorkbook([b], await getSettings());
+      XLSX.writeFile(wb, `${String(b.header.pointId).replace(/[^a-z0-9_-]+/gi,'_')}.xlsx`);
+    };
+
+    const del = document.createElement('button');
+    del.textContent = 'Delete';
+    del.onclick = async ()=>{
+      if(!confirm('Delete this boring?')) return;
+      const db = await DB.open();
+      const tx = db.transaction('borings','readwrite');
+      tx.objectStore('borings').delete(b.id || b.header.pointId);
+      tx.oncomplete = async ()=>{
+        await hydrateHome();
+        toast('Boring deleted');
+      };
+    };
+
+    row.append(open, exp, del);
+    div.appendChild(row);
+    $('boringList').appendChild(div);
+  });
+}
+
+async function saveDefaults(){
+  const d = {
+    project:$('cfgProject').value.trim(),
+    contractNo:$('cfgContractNo').value.trim(),
+    contractor:$('cfgContractor').value.trim(),
+    engineer:$('cfgEngineer').value.trim(),
+    roadway:$('cfgRoadway').value.trim(),
+    inspector:$('cfgInspector').value.trim(),
+    driller:$('cfgDriller').value.trim(),
+    helper:$('cfgHelper').value.trim(),
+    rigNo:$('cfgRigNo').value.trim(),
+    rigType:$('cfgRigType').value.trim(),
+    rigCondition:$('cfgRigCondition').value.trim(),
+    weather:$('cfgWeather').value.trim(),
+    location:$('cfgLocation').value.trim()
+  };
+  await DB.put('settings','defaults',d);
+  toast('Defaults saved');
+  await hydrateHome();
+}
+
+async function newBoring(){
+  const s = await getSettings();
+  const now = nowETInput();
+  currentBoring = {
+    id:crypto.randomUUID(),
+    header:{
+      pointId:'',
+      date:now.slice(0,10),
+      timeStart:now,
+      timeEnd:'',
+      section:'',
+      location:s.location || 'New Jersey',
+      driller:s.driller || '',
+      helper:s.helper || '',
+      inspector:s.inspector || '',
+      engineer:s.engineer || '',
+      rigNo:s.rigNo || '',
+      rigType:s.rigType || '',
+      holeDepth:null,
+      gwDepth:null,
+      gwDateTime:'',
+      weather:s.weather || '',
+      contractor:s.contractor || '',
+      generalRemarks:''
+    },
+    samples:[],
+    casing:[]
+  };
+  remarkSelections = [];
+  fillBoringForm();
+  renderBoringLists();
+  updateSaveExitState();
+  showScreen('boring');
+}
+
+async function openBoring(id){
+  currentBoring = await DB.get('borings',id);
+  if(!currentBoring){
+    toast('Boring not found',true);
+    return;
+  }
+  if(!currentBoring.id) currentBoring.id = currentBoring.header.pointId;
+  fillBoringForm();
+  renderBoringLists();
+  updateSaveExitState();
+  showScreen('boring');
+}
+
+function fillBoringForm(){
+  const h = currentBoring.header;
+  $('boringTag').textContent = h.pointId || 'Draft';
+  $('bhPointId').value = h.pointId || '';
+  $('bhDriller').value = h.driller || '';
+  $('bhHelper').value = h.helper || '';
+  $('bhInspector').value = h.inspector || '';
+  $('bhRigNo').value = h.rigNo || '';
+  $('bhRigType').value = h.rigType || '';
+  $('bhHoleDepth').value = h.holeDepth ?? '';
+  $('bhWeather').value = h.weather || '';
+  $('bhGwDepth').value = h.gwDepth ?? '';
+  $('bhGwDateTime').value = h.gwDateTime || '';
+  const lines = String(h.generalRemarks||'').split('\n').map(x=>x.trim()).filter(Boolean);
+  remarkSelections = [];
+  lines.forEach(line=>{
+    const clean = line.replace(/^\d+\.\s*/,'');
+    if(REMARK_OPTIONS.includes(clean)) remarkSelections.push(clean);
+  });
+  $('bhRemarks').value = lines.filter(line=>!REMARK_OPTIONS.includes(line.replace(/^\d+\.\s*/,''))).join('\n');
+  renderRemarkButtons();
+}
+
+function collectBoringForm(){
+  currentBoring.header = {
+    ...currentBoring.header,
+    pointId:$('bhPointId').value.trim(),
+    driller:$('bhDriller').value.trim(),
+    helper:$('bhHelper').value.trim(),
+    inspector:$('bhInspector').value.trim(),
+    rigNo:$('bhRigNo').value.trim(),
+    rigType:$('bhRigType').value.trim(),
+    holeDepth:$('bhHoleDepth').value ? Number($('bhHoleDepth').value) : null,
+    weather:$('bhWeather').value.trim(),
+    gwDepth:$('bhGwDepth').value ? Number($('bhGwDepth').value) : null,
+    gwDateTime:$('bhGwDateTime').value,
+    generalRemarks:orderedRemarks()
+  };
+}
+
+async function saveBoringHeader(){
+  collectBoringForm();
+  if(!currentBoring.header.pointId){
+    toast('Point ID is required',true);
+    return false;
+  }
+  currentBoring.id = currentBoring.header.pointId;
+  await DB.put('borings',currentBoring.id,currentBoring);
+  renderBoringLists();
+  updateSaveExitState();
+  await hydrateHome();
+  toast('Boring saved');
+  return true;
+}
+
+function sampleSubtitle(s){
+  const blows = isGB(s.number) ? '' : `Blows ${(s.blows||[]).map(v=>v||'WOH').join('/')}`;
+  const extras = [];
+  if(blows) extras.push(blows);
+  if(s.recoveryIn!==null && s.recoveryIn!=='' && s.recoveryIn!==undefined) extras.push(`R= ${s.recoveryIn}`);
+  if(s.ppTsf!==null && s.ppTsf!=='' && s.ppTsf!==undefined) extras.push(`PP= ${s.ppTsf} tsf`);
+  if((s.photos||[]).length) extras.push(`📷 ${(s.photos||[]).length}`);
+  return extras.join(' · ');
+}
+
+function renderBoringLists(){
+  $('sampleCount').textContent = String(currentBoring.samples.length);
+  $('casingCount').textContent = String((currentBoring.casing||[]).length);
+
+  $('sampleList').innerHTML = currentBoring.samples.length ? '' : '<div class="item">No samples yet.</div>';
+  $('casingList').innerHTML = (currentBoring.casing||[]).length ? '' : '<div class="item">No casing entries yet.</div>';
+
+  currentBoring.samples.sort((a,b)=>a.topDepth-b.topDepth).forEach((s,idx)=>{
+    const d = document.createElement('div');
+    d.className = 'item';
+    d.innerHTML = `
+      <div class="title">${s.number} · ${s.topDepth}-${s.bottomDepth ?? '?'}</div>
+      <div>${(s.materialAndRemarks||buildDesc(s)).replace(/\n/g,' · ')}</div>
+      <div class="small">${sampleSubtitle(s)}</div>
+    `;
+
+    const row = document.createElement('div');
+    row.className = 'compact-actions';
+
+    const edit = document.createElement('button');
+    edit.textContent = 'Edit';
+    edit.onclick = ()=>editSample(idx);
+
+    const del = document.createElement('button');
+    del.textContent = 'Delete';
+    del.onclick = async ()=>{
+      currentBoring.samples.splice(idx,1);
+      await DB.put('borings',currentBoring.id,currentBoring);
+      renderBoringLists();
+      updateSaveExitState();
+      await hydrateHome();
+    };
+
+    row.append(edit,del);
+    d.appendChild(row);
+    $('sampleList').appendChild(d);
+  });
+
+  (currentBoring.casing||[]).sort((a,b)=>Number(a.depth)-Number(b.depth)).forEach(c=>{
+    const d = document.createElement('div');
+    d.className = 'item';
+    d.innerHTML = `<div class="title">Depth ${c.depth}</div><div>${c.blows||'PUSH'}</div>`;
+    $('casingList').appendChild(d);
+  });
+}
+
+function updateSaveExitState(){
+  const max = maxSampleBottom(currentBoring);
+  const done = currentBoring.header.holeDepth!==null && max!==null && Number(max)>=Number(currentBoring.header.holeDepth);
+  $('saveExit').classList.toggle('hidden',!done);
+  $('addSample').classList.toggle('hidden',done);
+}
+
+function availableFamilies(idx){
+  const used = new Set();
+  if(currentSample.primaryFamily && currentSample.primaryFamily!=='Same as above') used.add(currentSample.primaryFamily);
+  if(idx>=1 && currentSample.secondary1?.family) used.add(currentSample.secondary1.family);
+  return ['GRAVEL','SAND','SILT/CLAY'].filter(x=>!used.has(x));
+}
+
+function finishStepIndex(){ return 4; }
+
+function startSample(){
+  const s = nextSuggestion(currentBoring.samples);
+  currentSample = {
+    number:s.number,
+    topDepth:s.top,
+    bottomDepth:s.bottom,
+    blows:['','','',''],
+    primaryColor:'Brown',
+    primaryFamily:'',
+    primaryClass:'',
+    sameAsAbove:false,
+    secondary1:null,
+    secondary2:null,
+    modifiers:[],
+    moisture:'',
+    recoveryIn:null,
+    ppTsf:null,
+    photos:[],
+    asphaltThickness:''
+  };
+  editingSampleIndex = -1;
+  sampleStep = isGB(currentSample.number) ? 1 : 0;
+  renderSampleWizard();
+  showScreen('sample');
+}
+
+function startShelby(){
+  const s = nextShelbySuggestion(currentBoring.samples);
+  currentSample = {
+    number:s.number,
+    topDepth:s.top,
+    bottomDepth:s.bottom,
+    blows:['PUSH','PUSH','PUSH','PUSH'],
+    primaryColor:'',
+    primaryFamily:'Same as above',
+    primaryClass:'',
+    sameAsAbove:true,
+    secondary1:null,
+    secondary2:null,
+    modifiers:[],
+    moisture:'wet',
+    recoveryIn:null,
+    ppTsf:null,
+    photos:[],
+    asphaltThickness:''
+  };
+  editingSampleIndex = -1;
+  sampleStep = finishStepIndex();
+  renderSampleWizard();
+  showScreen('sample');
+}
+
+function editSample(idx){
+  currentSample = structuredClone(currentBoring.samples[idx]);
+  editingSampleIndex = idx;
+  sampleStep = isGB(currentSample.number) ? 1 : (isShelby(currentSample.number) ? finishStepIndex() : 0);
+  renderSampleWizard();
+  showScreen('sample');
+}
+
+function updateSampleMeta(){
+  currentSample.number = $('sNumber').value.trim();
+  currentSample.topDepth = $('sTop').value==='' ? null : Number($('sTop').value);
+  currentSample.bottomDepth = $('sBottom').value==='' ? null : Number($('sBottom').value);
+}
+
+function renderPhotoLabel(count, loading=false){
+  return loading ? 'Loading' : `${count} Photos added`;
+}
+
+function renderSampleWizard(){
+  $('sNumber').value = currentSample.number || '';
+  $('sTop').value = currentSample.topDepth ?? '';
+  $('sBottom').value = currentSample.bottomDepth ?? '';
+  $('samplePreview').textContent = buildDesc(currentSample) || '—';
+
+  const first = isGB(currentSample.number) ? 1 : (isShelby(currentSample.number) ? finishStepIndex() : 0);
+  $('prevStep').disabled = sampleStep===first;
+  $('nextStep').classList.toggle('hidden',sampleStep===finishStepIndex());
+  $('saveSample').classList.toggle('hidden',sampleStep!==finishStepIndex());
+  $('finishNow').classList.toggle('hidden',sampleStep===finishStepIndex() || sampleStep<2 || isShelby(currentSample.number));
+
+  const body = $('sampleBody');
+  body.innerHTML = '';
+
+  const setTitle = (t,tag)=>{
+    $('sampleTitle').textContent = t;
+    $('sampleStepTag').textContent = tag;
+  };
+
+  if(sampleStep===0 && !isGB(currentSample.number) && !isShelby(currentSample.number)){
+    setTitle('Blow Count','Step 1/5');
+    const div = document.createElement('div');
+    div.className = 'grid2';
+    ['1st','2nd','3rd','4th'].forEach((lab,idx)=>{
+      const l = document.createElement('label');
+      l.innerHTML = `${lab} interval <input type="text" value="${currentSample.blows[idx]||''}" placeholder="12 or WOH">`;
+      l.querySelector('input').oninput = e=>currentSample.blows[idx] = e.target.value.trim();
+      div.appendChild(l);
+    });
+    body.appendChild(div);
+    return;
+  }
+
+  if(sampleStep===1 && !isShelby(currentSample.number)){
+    setTitle('Primary Component',`Step ${isGB(currentSample.number)?1:2}/5`);
+
+    if(currentSample.number==='GB-1'){
+      const ag = document.createElement('div');
+      ag.className = 'grid2';
+      ag.innerHTML = `
+        <label>Asphalt Thickness (in)
+          <input id="asphaltThickness" type="number" step="0.5" value="${String(currentSample.asphaltThickness||'').replace('"','')}">
+        </label>
+        <div class="pill">Leave blank if no asphalt</div>
+      `;
+      body.appendChild(ag);
+      setTimeout(()=>{
+        $('asphaltThickness').oninput = e=>{
+          currentSample.asphaltThickness = e.target.value ? `${e.target.value}"` : '';
+          $('samplePreview').textContent = buildDesc(currentSample);
+        };
+      });
+    }
+
+    body.appendChild(renderColorGrid());
+    body.appendChild(choiceGrid(PRIMARY, currentSample.sameAsAbove ? 'Same as above' : currentSample.primaryFamily, opt=>{
+      currentSample.primaryFamily = opt==='Same as above' ? '' : (opt || '');
+      currentSample.sameAsAbove = (opt==='Same as above');
+      currentSample.primaryClass = '';
+      currentSample.secondary1 = null;
+      currentSample.secondary2 = null;
+      if(currentSample.sameAsAbove){
+        sampleStep = finishStepIndex();
+        renderSampleWizard();
+        return;
+      }
+      renderSampleWizard();
+    }));
+
+    if(currentSample.primaryFamily==='SILT/CLAY'){
+      body.appendChild(choiceGrid(SILTCLAY,currentSample.primaryClass,opt=>{
+        currentSample.primaryClass = opt || '';
+        renderSampleWizard();
+        if(opt){
+          sampleStep = 2;
+          renderSampleWizard();
+        }
+      }));
+    } else if(['SAND','GRAVEL'].includes(currentSample.primaryFamily)){
+      body.appendChild(choiceGrid(GRADS,currentSample.primaryClass,opt=>{
+        currentSample.primaryClass = opt || '';
+        renderSampleWizard();
+        if(opt){
+          sampleStep = 2;
+          renderSampleWizard();
+        }
+      }));
+    }
+    return;
+  }
+
+  if(sampleStep===2 && !isShelby(currentSample.number)){
+    if(!currentSample.secondary1) currentSample.secondary1 = {qty:'',family:'',classification:''};
+    const sec = currentSample.secondary1;
+    setTitle('Secondary Component 1','Step 3/5');
+
+    body.appendChild(choiceGrid(QTY,sec.qty,opt=>{
+      sec.qty = opt || '';
+      renderSampleWizard();
+      if(sec.family && secondaryReady(sec)) {
+        sampleStep = 3;
+        renderSampleWizard();
+      }
+    }));
+
+    body.appendChild(choiceGrid(availableFamilies(0),sec.family,opt=>{
+      sec.family = opt || '';
+      sec.classification = '';
+      renderSampleWizard();
+    }));
+
+    if(sec.family==='SILT/CLAY'){
+      body.appendChild(choiceGrid(SILTCLAY,sec.classification,opt=>{
+        sec.classification = opt || '';
+        renderSampleWizard();
+        if(secondaryReady(sec)) {
+          sampleStep = 3;
+          renderSampleWizard();
+        }
+      }));
+    } else if(['SAND','GRAVEL'].includes(sec.family)){
+      body.appendChild(choiceGrid(GRADS,sec.classification,opt=>{
+        sec.classification = opt || '';
+        renderSampleWizard();
+        if(secondaryReady(sec)) {
+          sampleStep = 3;
+          renderSampleWizard();
+        }
+      }));
+    }
+    return;
+  }
+
+  if(sampleStep===3 && !isShelby(currentSample.number)){
+    if(!currentSample.secondary2) currentSample.secondary2 = {qty:'',family:'',classification:''};
+    const sec = currentSample.secondary2;
+    setTitle('Secondary Component 2','Step 4/5');
+
+    body.appendChild(choiceGrid(QTY,sec.qty,opt=>{
+      sec.qty = opt || '';
+      renderSampleWizard();
+      if(sec.family && secondaryReady(sec)) {
+        sampleStep = 4;
+        renderSampleWizard();
+      }
+    }));
+
+    body.appendChild(choiceGrid(availableFamilies(1),sec.family,opt=>{
+      sec.family = opt || '';
+      sec.classification = '';
+      renderSampleWizard();
+    }));
+
+    if(sec.family==='SILT/CLAY'){
+      body.appendChild(choiceGrid(SILTCLAY,sec.classification,opt=>{
+        sec.classification = opt || '';
+        renderSampleWizard();
+        if(secondaryReady(sec)) {
+          sampleStep = 4;
+          renderSampleWizard();
+        }
+      }));
+    } else if(['SAND','GRAVEL'].includes(sec.family)){
+      body.appendChild(choiceGrid(GRADS,sec.classification,opt=>{
+        sec.classification = opt || '';
+        renderSampleWizard();
+        if(secondaryReady(sec)) {
+          sampleStep = 4;
+          renderSampleWizard();
+        }
+      }));
+    }
+    return;
+  }
+
+  setTitle('Finish','Step 5/5');
+
+  body.appendChild(choiceGrid(MOIST,currentSample.moisture,opt=>{
+    currentSample.moisture = opt || '';
+    renderSampleWizard();
+  }));
+
+  const mods = document.createElement('div');
+  mods.className = 'choice-grid';
+  ['with roots','with shells','mottled','with organics','with asphalt'].forEach(m=>{
+    const b = document.createElement('button');
+    b.className = 'choice' + ((currentSample.modifiers||[]).includes(m) ? ' selected' : '');
+    b.textContent = m;
+    b.onclick = ()=>{
+      currentSample.modifiers = currentSample.modifiers || [];
+      if(currentSample.modifiers.includes(m)) currentSample.modifiers = currentSample.modifiers.filter(x=>x!==m);
+      else currentSample.modifiers.push(m);
+      renderSampleWizard();
+    };
+    mods.appendChild(b);
+  });
+  body.appendChild(mods);
+
+  const showRecPP = !isGB(currentSample.number);
+
+  const grid = document.createElement('div');
+  grid.className = 'grid2';
+  grid.innerHTML = `
+    ${showRecPP ? `<label>Recovery (in) <input id="recIn" type="number" step="0.5" value="${currentSample.recoveryIn ?? ''}"></label>
+    <label>PP (tsf) <input id="ppTsf" type="number" step="0.25" value="${currentSample.ppTsf ?? ''}"></label>` : `<div class="pill">GB samples do not use Recovery or PP</div><div></div>`}
+    <label id="photoLabel">${renderPhotoLabel((currentSample.photos||[]).length)}
+      <input id="photoInput" type="file" accept="image/*" capture="environment" multiple>
+    </label>
+    <div class="pill">${isShelby(currentSample.number) ? 'Shelby writes Same as above, wet' : 'Save to append'}</div>
+  `;
+  body.appendChild(grid);
+
+  setTimeout(()=>{
+    if(showRecPP){
+      $('recIn').oninput = e=>currentSample.recoveryIn = e.target.value==='' ? null : Number(e.target.value);
+      $('ppTsf').oninput = e=>{
+        currentSample.ppTsf = e.target.value==='' ? null : Number(e.target.value);
+        $('samplePreview').textContent = buildDesc(currentSample);
+      };
+    }
+    $('photoInput').onchange = async e=>{
+      const label = $('photoLabel');
+      label.firstChild.textContent = 'Loading';
+      const files = Array.from(e.target.files || []);
+      for(const f of files) currentSample.photos.push(await photoRef(f));
+      label.firstChild.textContent = renderPhotoLabel((currentSample.photos||[]).length);
+      renderSampleWizard();
+    };
+  });
+}
+
+async function photoRef(file){
+  let latitude=null, longitude=null, accuracyMeters=null, gpsSource='none';
+  try{
+    const p = await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{
+      enableHighAccuracy:true, timeout:10000, maximumAge:0
+    }));
+    latitude = p.coords.latitude;
+    longitude = p.coords.longitude;
+    accuracyMeters = p.coords.accuracy;
+    gpsSource = 'device';
+  }catch{}
+  return {
+    photoId:crypto.randomUUID(),
+    pointId:currentBoring.header.pointId || '',
+    sampleNumber:currentSample.number,
+    topDepth:currentSample.topDepth,
+    bottomDepth:currentSample.bottomDepth,
+    localAssetRef:file.name,
+    fileName:file.name,
+    gpsSource,
+    latitude,
+    longitude,
+    accuracyMeters,
+    capturedAtDevice:nowETInput(),
+    exifCapturedAt:null
+  };
+}
+
+function maybeAutoGW(sample){
+  if(sample.moisture==='wet' && !currentBoring.header.gwDepth){
+    currentBoring.header.gwDepth = sample.topDepth;
+    currentBoring.header.gwDateTime = nowETInput();
+    $('bhGwDepth').value = currentBoring.header.gwDepth;
+    $('bhGwDateTime').value = currentBoring.header.gwDateTime;
+  }
+}
+
+function maybeAutoEnd(sample){
+  if(currentBoring.header.holeDepth!==null && sample.bottomDepth!==null && Number(sample.bottomDepth)>=Number(currentBoring.header.holeDepth)){
+    currentBoring.header.timeEnd = nowETInput();
+  }
+}
+
+async function saveSample(){
+  updateSampleMeta();
+
+  if(!currentSample.number || currentSample.topDepth===null){
+    toast('Sample number and top depth are required',true);
+    return;
+  }
+  if(!currentSample.sameAsAbove && !currentSample.primaryFamily && !isShelby(currentSample.number)){
+    toast('Pick a primary component',true);
+    return;
+  }
+  if(!currentSample.moisture){
+    toast('Pick moisture',true);
+    return;
+  }
+  if(editingSampleIndex===-1 && currentBoring.samples.some(s=>s.number===currentSample.number)){
+    toast('Duplicate sample number',true);
+    return;
+  }
+
+  if(isGB(currentSample.number)){
+    currentSample.recoveryIn = null;
+    currentSample.ppTsf = null;
+  }
+
+  if(isShelby(currentSample.number)){
+    currentSample.sameAsAbove = true;
+    currentSample.primaryFamily = '';
+    currentSample.blows = ['PUSH','PUSH','PUSH','PUSH'];
+    currentSample.moisture = 'wet';
+  } else if(isGB(currentSample.number)){
+    currentSample.blows = ['','','',''];
+  } else {
+    currentSample.blows = (currentSample.blows||['','','','']).map(v=>{
+      const s = String(v||'').trim();
+      return (s==='' || s==='0') ? 'WOH' : s;
+    });
+  }
+
+  currentSample.materialAndRemarks = buildDesc(currentSample);
+  maybeAutoGW(currentSample);
+  maybeAutoEnd(currentSample);
+
+  if(editingSampleIndex>-1) currentBoring.samples[editingSampleIndex] = structuredClone(currentSample);
+  else currentBoring.samples.push(structuredClone(currentSample));
+
+  await DB.put('borings',currentBoring.id,currentBoring);
+  renderBoringLists();
+  updateSaveExitState();
+  await hydrateHome();
+  fillBoringForm();
+  showScreen('boring');
+  toast(`Saved ${currentSample.number}`);
+}
+
+function renderCasingEditor(){
+  $('casingRows').innerHTML = '';
+  if(!casingDraftRows.length) casingDraftRows.push({depth:0,blows:''});
+  casingDraftRows.forEach((row,idx)=>{
+    const d = document.createElement('div');
+    d.className = 'casing-row';
+    d.innerHTML = `
+      <input data-k="depth" data-i="${idx}" type="number" step="1" placeholder="Depth" value="${row.depth}">
+      <input data-k="blows" data-i="${idx}" placeholder="Blows" value="${row.blows}">
+      <button data-remove="${idx}">✕</button>
+    `;
+    $('casingRows').appendChild(d);
+  });
+
+  $('casingRows').querySelectorAll('input').forEach(inp=>inp.oninput=e=>{
+    const i = Number(e.target.dataset.i), k = e.target.dataset.k;
+    casingDraftRows[i][k] = e.target.value;
+  });
+
+  $('casingRows').querySelectorAll('button[data-remove]').forEach(btn=>btn.onclick=()=>{
+    casingDraftRows.splice(Number(btn.dataset.remove),1);
+    renderCasingEditor();
+  });
+}
+
+function buildGintWorkbook(borings,settings){
+  const wb = XLSX.utils.book_new();
+
+  XLSX.utils.book_append_sheet(
+    wb,
+    XLSX.utils.aoa_to_sheet([
+      SHEETS.PROJECT,
+      [settings.project||'',settings.contractNo||'','Geotechnical Subsurface Investigation','',settings.location||'New Jersey',settings.roadway||'',settings.engineer||'']
+    ]),
+    'PROJECT'
+  );
+
+  const point=[SHEETS.POINT], casing=[SHEETS.CASING], gw=[SHEETS['GROUND WATER READINGS']], lith=[SHEETS.LITHOLOGY], pay=[SHEETS['PAY QUANTITIES']], prog=[SHEETS.PROGRESS], samp=[SHEETS.SAMPLE];
+
+  borings.forEach(b=>{
+    const h = b.header;
+
+    point.push([
+      h.pointId,'',h.holeDepth||'',h.contractor||settings.contractor||'','','',
+      h.rigNo||'',h.rigType||'',h.driller||'',h.helper||'','','','','',
+      '4',140,'Automatic Hammer','2','1-3/8',140,30,'Shelby Tube',24,'3','2.938',
+      h.inspector||settings.inspector||'',h.generalRemarks||'',h.location||settings.location||'New Jersey','','','',''
+    ]);
+
+    if((b.casing||[]).length){
+      (b.casing||[]).forEach(c=>{
+        let val = String(c.blows||'').trim();
+        if(val==='' || val==='0') val='PUSH';
+        casing.push([h.pointId, Number(c.depth), val]);
+      });
+    }
+
+    if(h.gwDepth!==null && h.gwDepth!=='' && h.gwDepth!==undefined){
+      gw.push([h.pointId, fmtET(h.gwDateTime), h.gwDepth]);
+    }
+
+    lithRows(b).forEach(r=>lith.push(r));
+
+    const pq = payQty(b.samples);
+    pay.push([h.pointId,'','',h.holeDepth||'','','','','',pq.ordinary||'',pq.undist||'','','','','','','']);
+
+    prog.push([h.pointId, fmtET(h.timeStart||h.date||''), fmtET(h.timeEnd||''), h.weather||'', h.holeDepth||'']);
+
+    b.samples.forEach(s=>{
+      const blows = isGB(s.number)
+        ? ['','','','']
+        : isShelby(s.number)
+          ? ['PUSH','PUSH','PUSH','PUSH']
+          : (s.blows||['','','','']).map(v=>{
+              const t = String(v||'').trim();
+              return (t==='' || t==='0') ? 'WOH' : t;
+            });
+
+      samp.push([
+        h.pointId,
+        s.topDepth,
+        s.bottomDepth ?? '',
+        isGB(s.number) ? '' : (s.recoveryIn ?? ''),
+        s.number,
+        blows[0] || '',
+        blows[1] || '',
+        blows[2] || '',
+        blows[3] || '',
+        s.materialAndRemarks || buildDesc(s)
+      ]);
+    });
+  });
+
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(point), 'POINT');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(casing.length>1 ? casing : [SHEETS.CASING]), 'CASING');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(gw), 'GROUND WATER READINGS');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(lith), 'LITHOLOGY');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(pay), 'PAY QUANTITIES');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(prog), 'PROGRESS');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(samp), 'SAMPLE');
+
+  return wb;
+}
+
+function buildPhotoWorkbook(borings,settings){
+  const wb = XLSX.utils.book_new();
+  const folders=[PHOTO_SHEETS['PHOTO FOLDERS']], log=[PHOTO_SHEETS['PHOTO LOG']];
+
+  borings.forEach(b=>{
+    const folderId = b.header.pointId;
+    const folderPath = `GeoLog Photos/${folderId}/`;
+    const folderLink = folderPath;
+
+    folders.push([
+      folderId,
+      settings.project||'',
+      b.header.pointId,
+      b.header.inspector||settings.inspector||'',
+      b.header.pointId,
+      folderPath,
+      folderLink,
+      fmtET(new Date().toISOString()),
+      ''
+    ]);
+
+    b.samples.forEach(s=>{
+      (s.photos||[]).forEach(p=>{
+        log.push([
+          b.id,
+          b.header.pointId,
+          s.number,
+          s.topDepth,
+          s.bottomDepth ?? '',
+          p.photoId,
+          p.fileName,
+          folderId,
+          folderLink,
+          fmtET(p.capturedAtDevice||''),
+          fmtET(p.exifCapturedAt||''),
+          p.latitude ?? '',
+          p.longitude ?? '',
+          p.accuracyMeters ?? '',
+          p.gpsSource || 'none',
+          b.header.inspector||settings.inspector||'',
+          ''
+        ]);
+      });
+    });
+  });
+
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(folders), 'PHOTO FOLDERS');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(log), 'PHOTO LOG');
+  return wb;
+}
+
+$('newBoring').onclick = newBoring;
+$('openSettings').onclick = async()=>{ await hydrateHome(); showScreen('settings'); };
+$('homeFromSettings').onclick = ()=>showScreen('home');
+$('saveDefaults').onclick = saveDefaults;
+
+$('toggleInfo').onclick = ()=>{
+  const hidden = $('infoFields').classList.toggle('hidden');
+  $('toggleInfo').textContent = hidden ? 'Show Info' : 'Hide Info';
+};
+
+$('homeFromBoring').onclick = async()=>{
+  await saveBoringHeader();
+  showScreen('home');
+};
+
+$('saveBoring').onclick = saveBoringHeader;
+$('addSample').onclick = async()=>{ if(await saveBoringHeader()) startSample(); };
+$('addShelby').onclick = async()=>{ if(await saveBoringHeader()) startShelby(); };
+$('saveExit').onclick = async()=>{ if(await saveBoringHeader()) showScreen('home'); };
+
+$('editCasing').onclick = async()=>{
+  if(await saveBoringHeader()){
+    casingDraftRows = structuredClone(currentBoring.casing||[]);
+    renderCasingEditor();
+    showScreen('casing');
+  }
+};
+
+$('addCasingRow').onclick = ()=>{
+  casingDraftRows.push({depth:nextCasingDepth(), blows:''});
+  renderCasingEditor();
+};
+
+$('backFromCasing').onclick = ()=>showScreen('boring');
+
+$('saveCasing').onclick = async()=>{
+  currentBoring.casing = casingDraftRows
+    .filter(r=>String(r.depth).trim()!=='' || String(r.blows).trim()!=='')
+    .map(r=>({depth:Number(r.depth), blows:String(r.blows).trim() || 'PUSH'}));
+  await DB.put('borings',currentBoring.id,currentBoring);
+  renderBoringLists();
+  await hydrateHome();
+  showScreen('boring');
+  toast('Casing saved');
+};
+
+$('prevStep').onclick = ()=>{
+  const first = isGB(currentSample.number) ? 1 : (isShelby(currentSample.number) ? finishStepIndex() : 0);
+  sampleStep = Math.max(first, sampleStep-1);
+  renderSampleWizard();
+};
+
+$('nextStep').onclick = ()=>{
+  updateSampleMeta();
+
+  if(sampleStep===1 && !currentSample.sameAsAbove && !currentSample.primaryFamily && !isShelby(currentSample.number)){
+    toast('Pick a primary component',true);
+    return;
+  }
+
+  if(sampleStep===1 && currentSample.primaryFamily==='SILT/CLAY' && !currentSample.primaryClass){
+    toast('Pick the primary Silt/Clay type',true);
+    return;
+  }
+
+  if(sampleStep===1 && ['SAND','GRAVEL'].includes(currentSample.primaryFamily) && !currentSample.primaryClass){
+    toast('Pick the primary gradation',true);
+    return;
+  }
+
+  if(sampleStep===2 && currentSample.secondary1 && currentSample.secondary1.family && !secondaryReady(currentSample.secondary1)){
+    toast('Pick quantity and type/gradation for Secondary Component 1',true);
+    return;
+  }
+
+  if(sampleStep===3 && currentSample.secondary2 && currentSample.secondary2.family && !secondaryReady(currentSample.secondary2)){
+    toast('Pick quantity and type/gradation for Secondary Component 2',true);
+    return;
+  }
+
+  sampleStep = Math.min(finishStepIndex(), sampleStep+1);
+  renderSampleWizard();
+};
+
+$('finishNow').onclick = ()=>{
+  sampleStep = finishStepIndex();
+  renderSampleWizard();
+};
+
+$('saveSample').onclick = saveSample;
+
+$('exportGint').onclick = async()=>{
+  const borings = await DB.all('borings');
+  if(!borings.length) return toast('No borings to export',true);
+  const settings = await getSettings();
+  XLSX.writeFile(buildGintWorkbook(borings,settings), `GeoLog_Master_${new Date().toISOString().slice(0,10)}.xlsx`);
+};
+
+$('exportPhotos').onclick = async()=>{
+  const borings = await DB.all('borings');
+  if(!borings.length) return toast('No borings to export',true);
+  const settings = await getSettings();
+  XLSX.writeFile(buildPhotoWorkbook(borings,settings), `GeoLog_Photo_Log_${new Date().toISOString().slice(0,10)}.xlsx`);
+};
+
+(async function(){
+  await DB.put('settings','defaults', await getSettings());
+  await hydrateHome();
+  showScreen('home');
+})();
+  </script>
+</body>
+</html>
