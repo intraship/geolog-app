@@ -129,7 +129,7 @@
           <div class="stat"><div id="statPhotos" class="num">0</div><div class="lbl">Photos</div></div>
         </div>
         <button id="newBoring" class="primary wide">New Boring</button>
-        <button id="exportGint" class="wide">Export gINT Workbook</button>
+        <button id="exportGint" class="wide">Export Field Logs</button>
         <button id="exportPhotos" class="wide">Export Photos</button>
         <button id="openSettings" class="wide">Report Info</button>
       </div>
@@ -1670,7 +1670,14 @@ $('exportGint').onclick = async()=>{
   const borings = await DB.all('borings');
   if(!borings.length) return toast('No borings to export',true);
   const settings = await getSettings();
-  XLSX.writeFile(buildGintWorkbook(borings,settings), `GeoLog_Master_${new Date().toISOString().slice(0,10)}.xlsx`);
+  // Build filename: date_field_logs_inspector initials.xlsx
+  const date = new Date().toISOString().slice(0,10);
+  let initials = '';
+  if(settings.inspector) {
+    initials = settings.inspector.split(' ').map(w=>w[0]).join('').toUpperCase();
+  }
+  const filename = `${date}_field_logs${initials ? '_' + initials : ''}.xlsx`;
+  XLSX.writeFile(buildGintWorkbook(borings,settings), filename);
 };
 
 // Export photos as ZIP file
