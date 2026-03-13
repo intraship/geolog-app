@@ -13,7 +13,8 @@
     *{box-sizing:border-box}
     body{
       margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-      background:var(--bg);color:var(--text)
+      background:var(--bg);color:var(--text);
+      overscroll-behavior-y: contain;
     }
     .topbar{
       display:flex;justify-content:space-between;align-items:center;padding:16px 14px;
@@ -36,7 +37,24 @@
       background:#11110f;color:var(--text);border:1px solid var(--line);
       border-radius:12px;padding:12px
     }
-    textarea{min-height:78px}
+    textarea{min-height:78px;max-width:100%;box-sizing:border-box;}
+        .photo-enlarge-modal {
+          position:fixed;top:0;left:0;width:100vw;height:100vh;
+          background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;
+          z-index:9999;
+        }
+        .photo-enlarge-modal img {
+          max-width:90vw;max-height:80vh;border-radius:16px;box-shadow:0 2px 24px #0008;
+        }
+        .photo-enlarge-close {
+          position:absolute;top:24px;right:24px;background:rgba(0,0,0,0.5);
+          color:#fff;font-size:32px;border:none;border-radius:999px;padding:8px 16px;cursor:pointer;
+          z-index:10000;
+          transition:background 0.2s;
+        }
+        .photo-enlarge-close:hover {
+          background:rgba(0,0,0,0.8);
+        }
     button{
       background:#2a2a26;color:var(--text);border:1px solid var(--line);
       border-radius:12px;padding:13px 14px;cursor:pointer
@@ -822,11 +840,11 @@ function fillBoringForm(){
   });
   $('bhRemarks').value = lines.filter(line=>!REMARK_OPTIONS.includes(line.replace(/^\d+\.\s*/,''))).join('\n');
   renderRemarkButtons();
-  // Patch photo preview
+  // Patch photo preview with enlarge
   const preview = $('patchPhotoPreview');
   preview.innerHTML = '';
   if(currentBoring.patchPhoto && currentBoring.patchPhoto.photoDataUrl) {
-    preview.innerHTML = `<img src="${currentBoring.patchPhoto.photoDataUrl}" style="max-width:100%;max-height:180px;border-radius:8px;" alt="Patch Photo">`;
+    preview.innerHTML = `<img src="${currentBoring.patchPhoto.photoDataUrl}" style="max-width:100%;max-height:180px;border-radius:8px;cursor:pointer;" alt="Patch Photo" id="patchPhotoPreviewImg">`;
   }
   // Patch photo input handler
   $('patchPhotoInput').value = '';
@@ -835,10 +853,42 @@ function fillBoringForm(){
     if(file) {
       preview.innerHTML = 'Loading...';
       currentBoring.patchPhoto = await photoRef(file);
-      preview.innerHTML = `<img src="${currentBoring.patchPhoto.photoDataUrl}" style="max-width:100%;max-height:180px;border-radius:8px;" alt="Patch Photo">`;
+      preview.innerHTML = `<img src="${currentBoring.patchPhoto.photoDataUrl}" style="max-width:100%;max-height:180px;border-radius:8px;cursor:pointer;" alt="Patch Photo" id="patchPhotoPreviewImg">`;
       await DB.put('borings',currentBoring.id,currentBoring);
+      // Add enlarge handler after upload
+      setTimeout(()=>{
+        const img = document.getElementById('patchPhotoPreviewImg');
+        if(img) img.onclick = () => {
+          const modal = document.createElement('div');
+          modal.className = 'photo-enlarge-modal';
+          modal.innerHTML = `<img src="${currentBoring.patchPhoto.photoDataUrl}" alt="Patch Photo">`;
+          const closeBtn = document.createElement('button');
+          closeBtn.className = 'photo-enlarge-close';
+          closeBtn.innerHTML = '×';
+          closeBtn.onclick = () => document.body.removeChild(modal);
+          modal.appendChild(closeBtn);
+          modal.onclick = e => { if(e.target === modal) document.body.removeChild(modal); };
+          document.body.appendChild(modal);
+        };
+      }, 0);
     }
   };
+  // Add enlarge handler for preview
+  setTimeout(()=>{
+    const img = document.getElementById('patchPhotoPreviewImg');
+    if(img) img.onclick = () => {
+      const modal = document.createElement('div');
+      modal.className = 'photo-enlarge-modal';
+      modal.innerHTML = `<img src="${currentBoring.patchPhoto.photoDataUrl}" alt="Patch Photo">`;
+      const closeBtn = document.createElement('button');
+      closeBtn.className = 'photo-enlarge-close';
+      closeBtn.innerHTML = '×';
+      closeBtn.onclick = () => document.body.removeChild(modal);
+      modal.appendChild(closeBtn);
+      modal.onclick = e => { if(e.target === modal) document.body.removeChild(modal); };
+      document.body.appendChild(modal);
+    };
+  }, 0);
 }
 
 function collectBoringForm(){
@@ -1228,16 +1278,35 @@ function renderSampleWizard(){
   `;
   body.appendChild(grid);
 
-  // Photo preview
+  // Photo preview with enlarge
   const photoPreview = document.createElement('div');
   photoPreview.id = 'samplePhotoPreview';
   photoPreview.className = 'preview';
   if(currentSample.photos && currentSample.photos.length) {
-    photoPreview.innerHTML = currentSample.photos.map(p =>
-      p.photoDataUrl ? `<img src="${p.photoDataUrl}" style="max-width:100px;max-height:100px;margin:4px;border-radius:8px;" alt="Sample Photo">` : ''
+    photoPreview.innerHTML = currentSample.photos.map((p,i) =>
+      p.photoDataUrl ? `<img src="${p.photoDataUrl}" style="max-width:100px;max-height:100px;margin:4px;border-radius:8px;cursor:pointer;" alt="Sample Photo" data-photo-idx="${i}">` : ''
     ).join('');
   }
   body.appendChild(photoPreview);
+
+  // Enlarge photo handler
+  setTimeout(()=>{
+    photoPreview.querySelectorAll('img[data-photo-idx]').forEach(img => {
+      img.onclick = () => {
+        const idx = Number(img.dataset.photoIdx);
+        const modal = document.createElement('div');
+        modal.className = 'photo-enlarge-modal';
+        modal.innerHTML = `<img src="${currentSample.photos[idx].photoDataUrl}" alt="Sample Photo">`;
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'photo-enlarge-close';
+        closeBtn.innerHTML = '×';
+        closeBtn.onclick = () => document.body.removeChild(modal);
+        modal.appendChild(closeBtn);
+        modal.onclick = e => { if(e.target === modal) document.body.removeChild(modal); };
+        document.body.appendChild(modal);
+      };
+    });
+  }, 0);
 
   setTimeout(()=>{
     if(showRecPP){
