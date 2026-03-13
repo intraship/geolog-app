@@ -179,6 +179,11 @@
         <div style="font-size:13px;color:var(--muted);margin-bottom:6px">General Remarks</div>
         <div id="remarkButtons" class="choice-grid"></div>
         <label>Additional Remarks <textarea id="bhRemarks" placeholder="Remarks"></textarea></label>
+
+        <label id="patchPhotoLabel">Patch Photo
+          <input id="patchPhotoInput" type="file" accept="image/*" capture="environment">
+        </label>
+        <div id="patchPhotoPreview" class="preview"></div>
       </div>
 
       <div class="card">
@@ -817,6 +822,23 @@ function fillBoringForm(){
   });
   $('bhRemarks').value = lines.filter(line=>!REMARK_OPTIONS.includes(line.replace(/^\d+\.\s*/,''))).join('\n');
   renderRemarkButtons();
+  // Patch photo preview
+  const preview = $('patchPhotoPreview');
+  preview.innerHTML = '';
+  if(currentBoring.patchPhoto && currentBoring.patchPhoto.photoDataUrl) {
+    preview.innerHTML = `<img src="${currentBoring.patchPhoto.photoDataUrl}" style="max-width:100%;max-height:180px;border-radius:8px;" alt="Patch Photo">`;
+  }
+  // Patch photo input handler
+  $('patchPhotoInput').value = '';
+  $('patchPhotoInput').onchange = async e => {
+    const file = e.target.files[0];
+    if(file) {
+      preview.innerHTML = 'Loading...';
+      currentBoring.patchPhoto = await photoRef(file);
+      preview.innerHTML = `<img src="${currentBoring.patchPhoto.photoDataUrl}" style="max-width:100%;max-height:180px;border-radius:8px;" alt="Patch Photo">`;
+      await DB.put('borings',currentBoring.id,currentBoring);
+    }
+  };
 }
 
 function collectBoringForm(){
@@ -1202,9 +1224,20 @@ function renderSampleWizard(){
     <label id="photoLabel">${renderPhotoLabel((currentSample.photos||[]).length)}
       <input id="photoInput" type="file" accept="image/*" capture="environment" multiple>
     </label>
-    <div class="pill">${isShelby(currentSample.number) ? 'Shelby writes Same as above, wet' : 'Save to append'}</div>
+    ${isShelby(currentSample.number) ? '<div class="pill">Shelby writes Same as above, wet</div>' : ''}
   `;
   body.appendChild(grid);
+
+  // Photo preview
+  const photoPreview = document.createElement('div');
+  photoPreview.id = 'samplePhotoPreview';
+  photoPreview.className = 'preview';
+  if(currentSample.photos && currentSample.photos.length) {
+    photoPreview.innerHTML = currentSample.photos.map(p =>
+      p.photoDataUrl ? `<img src="${p.photoDataUrl}" style="max-width:100px;max-height:100px;margin:4px;border-radius:8px;" alt="Sample Photo">` : ''
+    ).join('');
+  }
+  body.appendChild(photoPreview);
 
   setTimeout(()=>{
     if(showRecPP){
@@ -1575,9 +1608,17 @@ $('exportGint').onclick = async()=>{
 $('exportPhotos').onclick = async()=>{
   const borings = await DB.all('borings');
   if(!borings.length) return toast('No borings to export',true);
-  // Collect all photos
+  // Collect all photos, including Patch
   const photos = [];
   borings.forEach(b => {
+    // Patch photo
+    if(b.patchPhoto && b.patchPhoto.photoDataUrl) {
+      photos.push({
+        name: `${b.header.pointId}_PATCH_${b.patchPhoto.fileName}`,
+        dataUrl: b.patchPhoto.photoDataUrl
+      });
+    }
+    // Sample photos
     b.samples.forEach(s => {
       (s.photos||[]).forEach(p => {
         if(p.photoDataUrl) {
