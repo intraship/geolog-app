@@ -15,6 +15,7 @@
       margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
       background:var(--bg);color:var(--text);
       overscroll-behavior-y: contain;
+      font-size:16px;
     }
     .topbar{
       display:flex;justify-content:space-between;align-items:center;padding:16px 14px;
@@ -24,37 +25,20 @@
     .logo{font-weight:800;letter-spacing:2px;color:var(--accent)}
     .sub{font-size:12px;color:var(--muted)}
     .version{padding:6px 14px;color:var(--accent);font-weight:700}
-    .main{padding:8px;max-width:480px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
+    .main{padding:12px;max-width:780px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
     .screen{display:none}
     .screen.active{display:flex;flex-direction:column;gap:12px}
-    .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
     h3,h4{margin:0 0 10px}
     label{
-      display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted);margin-bottom:10px
+      display:flex;flex-direction:row;align-items:center;gap:8px;font-size:14px;color:var(--muted);margin-bottom:10px
     }
     input,textarea,button,select{font:inherit}
-        @media (max-width:480px){
-          .main{padding:2px;max-width:100vw;}
-          .card{padding:6px;border-radius:10px;}
-          button{padding:18px 0;font-size:20px;}
-          .stats{grid-template-columns:1fr;gap:4px;}
-          .stat{padding:8px;font-size:16px;}
-          .num{font-size:22px;}
-          .lbl{font-size:12px;}
-          .grid2,.grid3{grid-template-columns:1fr;gap:6px;}
-          .stack{gap:6px;}
-          label{font-size:15px;}
-          input,textarea,select{padding:10px;font-size:16px;}
-          .preview img{max-width:90vw;max-height:120px;}
-          .photo-enlarge-modal img{max-width:98vw;max-height:60vh;}
-          .photo-enlarge-close{top:8px;right:8px;font-size:24px;padding:4px 8px;}
-          .compact-actions button{font-size:16px;padding:10px 0;}
-        }
     input,textarea,select{
       background:#11110f;color:var(--text);border:1px solid var(--line);
-      border-radius:12px;padding:12px
+      border-radius:12px;padding:16px
     }
-    textarea{min-height:78px;max-width:100%;box-sizing:border-box;}
+    textarea{min-height:100px;max-width:100%;box-sizing:border-box;}
         .photo-enlarge-modal {
           position:fixed;top:0;left:0;width:100vw;height:100vh;
           background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;
@@ -74,17 +58,17 @@
         }
     button{
       background:#2a2a26;color:var(--text);border:1px solid var(--line);
-      border-radius:12px;padding:13px 14px;cursor:pointer
+      border-radius:12px;padding:16px 20px;cursor:pointer
     }
     button.primary{background:var(--accent);border-color:var(--accent);color:white}
     button.wide{width:100%;margin-bottom:10px}
     .row{display:flex;gap:8px;align-items:center}
     .between{justify-content:space-between}
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
     .stack{display:flex;flex-direction:column;gap:10px}
-    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
-    .stat{background:#171715;border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+    .stat{background:#171715;border:1px solid var(--line);border-radius:14px;padding:16px;text-align:center}
     .num{font-size:28px;font-weight:800;color:var(--accent)}
     .lbl{font-size:11px;color:var(--muted)}
     .pill{
@@ -113,6 +97,9 @@
     .swatch{height:48px;border-radius:12px;border:2px solid transparent}
     .swatch.selected{border-color:#fff}
     .hidden{display:none!important}
+    .sample-inputs{display:flex;gap:12px;margin-bottom:10px}
+    #sNumber{width:80px}
+    #sTop,#sBottom{width:60px}
     .toast{
       position:fixed;left:50%;transform:translateX(-50%);bottom:16px;background:var(--green);
       color:#fff;padding:10px 16px;border-radius:999px;opacity:0;transition:opacity .2s;
@@ -134,7 +121,7 @@
     </div>
   </header>
 
-  <div class="version">VERSION: v0.75 · Offline Download Only</div>
+  <div class="version">VERSION: v0.80 · Field/Office Tool</div>
 
   <main class="main">
     <section id="home" class="screen active">
@@ -195,25 +182,30 @@
       <div class="card">
         <div class="row between">
           <h3>Boring Header</h3>
-          <span id="boringTag" class="pill">Draft</span>
+          <div>
+            <span id="boringTag" class="pill">Draft</span>
+            <button id="toggleBoringInfo">Show Info</button>
+          </div>
         </div>
 
-        <div class="grid2">
           <label>Point ID* <input id="bhPointId" placeholder="BR3-17"></label>
+          <div id="boringInfoFields" class="hidden">
           <label>Driller <input id="bhDriller" placeholder="Driller Name"></label>
           <label>Helper <input id="bhHelper" placeholder="Helper Name"></label>
           <label>Inspector <input id="bhInspector" placeholder="Inspector Name"></label>
           <label>Rig # <input id="bhRigNo" placeholder="14"></label>
           <label>Rig Type <input id="bhRigType" placeholder="CME-55"></label>
+          </div>
           <label>Hole Depth <input id="bhHoleDepth" type="number" step="0.5" placeholder="102"></label>
+          <div id="boringInfoFields2" class="hidden">
           <label>Weather <input id="bhWeather" placeholder="37°F / Sunny"></label>
           <label>GW Depth <input id="bhGwDepth" type="number" step="0.5" placeholder="17.5"></label>
           <label>GW DateTime <input id="bhGwDateTime" type="datetime-local"></label>
-        </div>
+          </div>
 
-        <div style="font-size:13px;color:var(--muted);margin-bottom:6px">General Remarks</div>
-        <div id="remarkButtons" class="choice-grid"></div>
-        <label>Additional Remarks <textarea id="bhRemarks" placeholder="Remarks"></textarea></label>
+        <div class="hidden" style="font-size:13px;color:var(--muted);margin-bottom:6px">General Remarks</div>
+        <div id="remarkButtons" class="choice-grid hidden"></div>
+        <label class="hidden">Additional Remarks <textarea id="bhRemarks" placeholder="Remarks"></textarea></label>
 
         <label id="patchPhotoLabel">Patch Photo
           <input id="patchPhotoInput" type="file" accept="image/*" capture="environment">
@@ -274,7 +266,7 @@
           <span id="sampleStepTag" class="pill">Step</span>
         </div>
 
-        <div class="grid3">
+        <div class="sample-inputs">
           <label>Number <input id="sNumber"></label>
           <label>Top <input id="sTop" type="number" step="0.5"></label>
           <label>Bottom <input id="sBottom" type="number" step="0.5"></label>
@@ -1001,6 +993,8 @@ function updateSaveExitState(){
   const done = currentBoring.header.holeDepth!==null && max!==null && Number(max)>=Number(currentBoring.header.holeDepth);
   $('saveExit').classList.toggle('hidden',!done);
   $('addSample').classList.toggle('hidden',done);
+  $('patchPhotoLabel').classList.toggle('hidden', !done);
+  $('patchPhotoPreview').classList.toggle('hidden', !done);
 }
 
 function availableFamilies(idx){
@@ -1600,6 +1594,13 @@ $('saveDefaults').onclick = saveDefaults;
 $('toggleInfo').onclick = ()=>{
   const hidden = $('infoFields').classList.toggle('hidden');
   $('toggleInfo').textContent = hidden ? 'Show Info' : 'Hide Info';
+};
+
+$('toggleBoringInfo').onclick = ()=>{
+  const hidden1 = $('boringInfoFields').classList.toggle('hidden');
+  const hidden2 = $('boringInfoFields2').classList.toggle('hidden');
+  const hidden = hidden1 && hidden2; // if both are hidden now
+  $('toggleBoringInfo').textContent = hidden ? 'Show Info' : 'Hide Info';
 };
 
 $('homeFromBoring').onclick = async()=>{
