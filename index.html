@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>GeoLogger v0.75</title>
+  <title>GeoLogger v0.80</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     :root{
@@ -39,23 +39,23 @@
       border-radius:12px;padding:16px
     }
     textarea{min-height:100px;max-width:100%;box-sizing:border-box;}
-        .photo-enlarge-modal {
-          position:fixed;top:0;left:0;width:100vw;height:100vh;
-          background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;
-          z-index:9999;
-        }
-        .photo-enlarge-modal img {
-          max-width:90vw;max-height:80vh;border-radius:16px;box-shadow:0 2px 24px #0008;
-        }
-        .photo-enlarge-close {
-          position:absolute;top:24px;right:24px;background:rgba(0,0,0,0.5);
-          color:#fff;font-size:32px;border:none;border-radius:999px;padding:8px 16px;cursor:pointer;
-          z-index:10000;
-          transition:background 0.2s;
-        }
-        .photo-enlarge-close:hover {
-          background:rgba(0,0,0,0.8);
-        }
+    .photo-enlarge-modal {
+      position:fixed;top:0;left:0;width:100vw;height:100vh;
+      background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;
+      z-index:9999;
+    }
+    .photo-enlarge-modal img {
+      max-width:90vw;max-height:80vh;border-radius:16px;box-shadow:0 2px 24px #0008;
+    }
+    .photo-enlarge-close {
+      position:absolute;top:24px;right:24px;background:rgba(0,0,0,0.5);
+      color:#fff;font-size:32px;border:none;border-radius:999px;padding:8px 16px;cursor:pointer;
+      z-index:10000;
+      transition:background 0.2s;
+    }
+    .photo-enlarge-close:hover {
+      background:rgba(0,0,0,0.8);
+    }
     button{
       background:#2a2a26;color:var(--text);border:1px solid var(--line);
       border-radius:12px;padding:16px 20px;cursor:pointer
@@ -287,6 +287,7 @@
   <div id="toast" class="toast"></div>
 
   <script>
+const APP_VERSION = 'v0.80';
 const DEFAULTS = {
   project:'NJ Turnpike 1 to 4 Capacity Enhancements Program',
   contractNo:'OPS No. T3839',
@@ -357,7 +358,7 @@ const fmt = new Intl.DateTimeFormat('en-US',{
 const DB = {
   async open(){
     return new Promise((res,rej)=>{
-      const r = indexedDB.open('geolog-v71-single',1);
+      const r = indexedDB.open('geolog',2);
       r.onupgradeneeded = () => {
         const d = r.result;
         ['settings','borings'].forEach(n=>{
@@ -393,6 +394,15 @@ const DB = {
       const r = tx.objectStore(store).getAll();
       r.onsuccess = ()=>res(r.result.map(x=>x.value));
       r.onerror = ()=>rej(r.error);
+    });
+  },
+  async delete(store,id){
+    const d = await this.open();
+    return new Promise((res,rej)=>{
+      const tx = d.transaction(store,'readwrite');
+      tx.objectStore(store).delete(id);
+      tx.oncomplete = ()=>res();
+      tx.onerror = ()=>rej(tx.error);
     });
   }
 };
@@ -431,6 +441,7 @@ function nowETInput(){
 function isGB(n){ return String(n||'').toUpperCase().startsWith('GB-'); }
 function isShelby(n){ return String(n||'').toUpperCase().startsWith('U-'); }
 function num(n){ const m=String(n||'').match(/-(\d+)/); return m?parseInt(m[1],10):0; }
+function ppAllowedForSample(s){ return !!(s.sameAsAbove || s.primaryFamily==='SILT/CLAY' || isShelby(s.number)); }
 
 function nextSuggestion(samples){
   const usedRanges = new Set(samples.map(s=>`${s.topDepth}-${s.bottomDepth}`));
@@ -579,17 +590,11 @@ function buildDesc(s){
 
   let out = [...components, ...tail].join(', ').replace(/\s{2,}/g,' ').trim();
 
-  if(s.ppTsf!==null && s.ppTsf!=='' && s.ppTsf!==undefined){
+  if(ppAllowedForSample(s) && s.ppTsf!==null && s.ppTsf!=='' && s.ppTsf!==undefined){
     out += `\nPP= ${s.ppTsf} tsf`;
   }
 
   return out;
-}
-
-function prevSample(s,samples){
-  const sorted = [...samples].sort((a,b)=>a.topDepth-b.topDepth);
-  const i = sorted.findIndex(x=>x.number===s.number);
-  return i>0 ? sorted[i-1] : null;
 }
 
 function renderRemarkButtons(){
@@ -707,7 +712,7 @@ async function hydrateHome(){
   $('statBorings').textContent = borings.length;
   $('statSamples').textContent = borings.reduce((a,b)=>a+b.samples.length,0);
   $('statUndist').textContent = borings.reduce((a,b)=>a+b.samples.filter(s=>isShelby(s.number)).length,0);
-  $('statPhotos').textContent = borings.reduce((a,b)=>a+b.samples.reduce((x,s)=>x+(s.photos||[]).length,0),0);
+  $('statPhotos').textContent = borings.reduce((a,b)=>a+b.samples.reduce((x,s)=>x+(s.photos||[]).length,0),0) + borings.reduce((a,b)=>a+(b.patchPhoto ? 1 : 0),0);
 
   $('boringList').innerHTML = '';
   if(!borings.length){
@@ -717,12 +722,12 @@ async function hydrateHome(){
 
   borings.forEach(b=>{
     const undist = (b.samples||[]).filter(s=>String(s.number||'').toUpperCase().startsWith('U-')).length;
-    const photos = (b.samples||[]).reduce((a,s)=>a+((s.photos||[]).length),0);
+    const photos = (b.samples||[]).reduce((a,s)=>a+((s.photos||[]).length),0) + (b.patchPhoto ? 1 : 0);
 
     const div = document.createElement('div');
     div.className = 'item';
     div.innerHTML = `
-      <div class="title">${b.header.pointId}</div>
+      <div class="title">${b.header.pointId || 'Untitled boring'}</div>
       <div>${b.samples.length} samples · ${undist} undisturbed · ${photos} photos · Hole ${b.header.holeDepth || '—'} ft</div>
     `;
 
@@ -731,26 +736,22 @@ async function hydrateHome(){
 
     const open = document.createElement('button');
     open.textContent = 'Open';
-    open.onclick = ()=>openBoring(b.id || b.header.pointId);
+    open.onclick = ()=>openBoring(b.id);
 
     const exp = document.createElement('button');
     exp.textContent = 'Export';
     exp.onclick = async ()=>{
       const wb = buildGintWorkbook([b], await getSettings());
-      XLSX.writeFile(wb, `${String(b.header.pointId).replace(/[^a-z0-9_-]+/gi,'_')}.xlsx`);
+      XLSX.writeFile(wb, `${String(b.header.pointId || 'boring').replace(/[^a-z0-9_-]+/gi,'_')}.xlsx`);
     };
 
     const del = document.createElement('button');
     del.textContent = 'Delete';
     del.onclick = async ()=>{
       if(!confirm('Delete this boring?')) return;
-      const db = await DB.open();
-      const tx = db.transaction('borings','readwrite');
-      tx.objectStore('borings').delete(b.id || b.header.pointId);
-      tx.oncomplete = async ()=>{
-        await hydrateHome();
-        toast('Boring deleted');
-      };
+      await DB.delete('borings', b.id);
+      await hydrateHome();
+      toast('Boring deleted');
     };
 
     row.append(open, exp, del);
@@ -821,7 +822,6 @@ async function openBoring(id){
     toast('Boring not found',true);
     return;
   }
-  if(!currentBoring.id) currentBoring.id = currentBoring.header.pointId;
   fillBoringForm();
   renderBoringLists();
   updateSaveExitState();
@@ -849,55 +849,49 @@ function fillBoringForm(){
   });
   $('bhRemarks').value = lines.filter(line=>!REMARK_OPTIONS.includes(line.replace(/^\d+\.\s*/,''))).join('\n');
   renderRemarkButtons();
-  // Patch photo preview with enlarge
+
   const preview = $('patchPhotoPreview');
   preview.innerHTML = '';
   if(currentBoring.patchPhoto && currentBoring.patchPhoto.photoDataUrl) {
     preview.innerHTML = `<img src="${currentBoring.patchPhoto.photoDataUrl}" style="max-width:100%;max-height:180px;border-radius:8px;cursor:pointer;" alt="Patch Photo" id="patchPhotoPreviewImg">`;
   }
-  // Patch photo input handler
   $('patchPhotoInput').value = '';
   $('patchPhotoInput').onchange = async e => {
     const file = e.target.files[0];
     if(file) {
+      if(!currentBoring.header.pointId.trim()){
+        toast('Save Point ID before adding patch photo', true);
+        e.target.value = '';
+        return;
+      }
       preview.innerHTML = 'Loading...';
-      currentBoring.patchPhoto = await photoRef(file);
+      currentBoring.patchPhoto = await photoRef(file, { isPatch: true });
       preview.innerHTML = `<img src="${currentBoring.patchPhoto.photoDataUrl}" style="max-width:100%;max-height:180px;border-radius:8px;cursor:pointer;" alt="Patch Photo" id="patchPhotoPreviewImg">`;
       await DB.put('borings',currentBoring.id,currentBoring);
-      // Add enlarge handler after upload
-      setTimeout(()=>{
-        const img = document.getElementById('patchPhotoPreviewImg');
-        if(img) img.onclick = () => {
-          const modal = document.createElement('div');
-          modal.className = 'photo-enlarge-modal';
-          modal.innerHTML = `<img src="${currentBoring.patchPhoto.photoDataUrl}" alt="Patch Photo">`;
-          const closeBtn = document.createElement('button');
-          closeBtn.className = 'photo-enlarge-close';
-          closeBtn.innerHTML = '×';
-          closeBtn.onclick = () => document.body.removeChild(modal);
-          modal.appendChild(closeBtn);
-          modal.onclick = e => { if(e.target === modal) document.body.removeChild(modal); };
-          document.body.appendChild(modal);
-        };
-      }, 0);
+      setTimeout(bindPatchPreviewEnlarge, 0);
     }
   };
-  // Add enlarge handler for preview
-  setTimeout(()=>{
-    const img = document.getElementById('patchPhotoPreviewImg');
-    if(img) img.onclick = () => {
-      const modal = document.createElement('div');
-      modal.className = 'photo-enlarge-modal';
-      modal.innerHTML = `<img src="${currentBoring.patchPhoto.photoDataUrl}" alt="Patch Photo">`;
-      const closeBtn = document.createElement('button');
-      closeBtn.className = 'photo-enlarge-close';
-      closeBtn.innerHTML = '×';
-      closeBtn.onclick = () => document.body.removeChild(modal);
-      modal.appendChild(closeBtn);
-      modal.onclick = e => { if(e.target === modal) document.body.removeChild(modal); };
-      document.body.appendChild(modal);
-    };
-  }, 0);
+  setTimeout(bindPatchPreviewEnlarge, 0);
+}
+
+function bindPatchPreviewEnlarge(){
+  const img = document.getElementById('patchPhotoPreviewImg');
+  if(img && currentBoring?.patchPhoto?.photoDataUrl) {
+    img.onclick = () => showImageModal(currentBoring.patchPhoto.photoDataUrl, 'Patch Photo');
+  }
+}
+
+function showImageModal(src, alt){
+  const modal = document.createElement('div');
+  modal.className = 'photo-enlarge-modal';
+  modal.innerHTML = `<img src="${src}" alt="${alt}">`;
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'photo-enlarge-close';
+  closeBtn.innerHTML = '×';
+  closeBtn.onclick = () => document.body.removeChild(modal);
+  modal.appendChild(closeBtn);
+  modal.onclick = e => { if(e.target === modal) document.body.removeChild(modal); };
+  document.body.appendChild(modal);
 }
 
 function collectBoringForm(){
@@ -923,7 +917,6 @@ async function saveBoringHeader(){
     toast('Point ID is required',true);
     return false;
   }
-  currentBoring.id = currentBoring.header.pointId;
   await DB.put('borings',currentBoring.id,currentBoring);
   renderBoringLists();
   updateSaveExitState();
@@ -937,7 +930,7 @@ function sampleSubtitle(s){
   const extras = [];
   if(blows) extras.push(blows);
   if(s.recoveryIn!==null && s.recoveryIn!=='' && s.recoveryIn!==undefined) extras.push(`R= ${s.recoveryIn}`);
-  if(s.ppTsf!==null && s.ppTsf!=='' && s.ppTsf!==undefined) extras.push(`PP= ${s.ppTsf} tsf`);
+  if(ppAllowedForSample(s) && s.ppTsf!==null && s.ppTsf!=='' && s.ppTsf!==undefined) extras.push(`PP= ${s.ppTsf} tsf`);
   if((s.photos||[]).length) extras.push(`📷 ${(s.photos||[]).length}`);
   return extras.join(' · ');
 }
@@ -1080,6 +1073,7 @@ function renderSampleWizard(){
   $('sNumber').value = currentSample.number || '';
   $('sTop').value = currentSample.topDepth ?? '';
   $('sBottom').value = currentSample.bottomDepth ?? '';
+  if(!ppAllowedForSample(currentSample)) currentSample.ppTsf = null;
   $('samplePreview').textContent = buildDesc(currentSample) || '—';
 
   const first = isGB(currentSample.number) ? 1 : (isShelby(currentSample.number) ? finishStepIndex() : 0);
@@ -1097,18 +1091,101 @@ function renderSampleWizard(){
   };
 
   if(sampleStep===0 && !isGB(currentSample.number) && !isShelby(currentSample.number)){
-    setTitle('Blow Count','Step 1/5');
-    const div = document.createElement('div');
-    div.className = 'grid2';
-    ['1st','2nd','3rd','4th'].forEach((lab,idx)=>{
-      const l = document.createElement('label');
-      l.innerHTML = `${lab} interval <input type="text" value="${currentSample.blows[idx]||''}" placeholder="12 or WOH">`;
-      l.querySelector('input').oninput = e=>currentSample.blows[idx] = e.target.value.trim();
-      div.appendChild(l);
-    });
-    body.appendChild(div);
-    return;
-  }
+  setTitle('Blow Count','Step 1/5');
+
+  const div = document.createElement('div');
+  div.className = 'grid2';
+
+  ['1st','2nd','3rd','4th'].forEach((lab, idx) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'card';
+
+    const title = document.createElement('div');
+    title.textContent = `${lab} Interval`;
+    title.style.marginBottom = '8px';
+    title.style.fontWeight = '700';
+
+    const getDisplayValue = () => {
+      const v = currentSample.blows[idx];
+      return (v === '' || v === null || v === undefined) ? '0' : String(v);
+    };
+
+    const setValue = (value) => {
+      const clean = Math.max(0, Number(value) || 0);
+      currentSample.blows[idx] = clean;
+      tapBtn.textContent = String(clean);
+      manual.value = clean === 0 ? '' : String(clean);
+    };
+
+    const tapBtn = document.createElement('button');
+    tapBtn.type = 'button';
+    tapBtn.className = 'wide primary';
+    tapBtn.style.fontSize = '34px';
+    tapBtn.style.fontWeight = '800';
+    tapBtn.style.padding = '26px 16px';
+    tapBtn.style.marginBottom = '10px';
+    tapBtn.textContent = getDisplayValue();
+
+    tapBtn.onclick = () => {
+      const curr = Number(currentSample.blows[idx] || 0);
+      setValue(curr + 1);
+    };
+
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.style.marginBottom = '10px';
+
+    const minus = document.createElement('button');
+    minus.type = 'button';
+    minus.textContent = '-1';
+    minus.onclick = () => {
+      const curr = Number(currentSample.blows[idx] || 0);
+      setValue(Math.max(0, curr - 1));
+    };
+
+    row.appendChild(minus);
+
+    const manualLabel = document.createElement('label');
+    manualLabel.style.display = 'flex';
+    manualLabel.style.flexDirection = 'column';
+    manualLabel.style.alignItems = 'stretch';
+    manualLabel.style.gap = '6px';
+    manualLabel.style.marginBottom = '0';
+    manualLabel.textContent = 'Manual edit';
+
+    const manual = document.createElement('input');
+    manual.type = 'text';
+    manual.inputMode = 'numeric';
+    manual.placeholder = 'Enter count';
+    manual.value = getDisplayValue() === '0' ? '' : getDisplayValue();
+
+    manual.oninput = (e) => {
+      const raw = e.target.value.replace(/[^\d]/g, '');
+      if (raw === '') {
+        currentSample.blows[idx] = '';
+        tapBtn.textContent = '0';
+        e.target.value = '';
+        return;
+      }
+      const num = Number(raw);
+      currentSample.blows[idx] = num;
+      tapBtn.textContent = String(num);
+      e.target.value = String(num);
+    };
+
+    manualLabel.appendChild(manual);
+
+    wrap.appendChild(title);
+    wrap.appendChild(tapBtn);
+    wrap.appendChild(row);
+    wrap.appendChild(manualLabel);
+
+    div.appendChild(wrap);
+  });
+
+  body.appendChild(div);
+  return;
+}
 
   if(sampleStep===1 && !isShelby(currentSample.number)){
     setTitle('Primary Component',`Step ${isGB(currentSample.number)?1:2}/5`);
@@ -1276,20 +1353,20 @@ function renderSampleWizard(){
   body.appendChild(mods);
 
   const showRecPP = !isGB(currentSample.number);
+  const showPP = showRecPP && ppAllowedForSample(currentSample);
 
   const grid = document.createElement('div');
   grid.className = 'grid2';
   grid.innerHTML = `
-    ${showRecPP ? `<label>Recovery (in) <input id="recIn" type="number" step="0.5" value="${currentSample.recoveryIn ?? ''}"></label>
-    <label>PP (tsf) <input id="ppTsf" type="number" step="0.25" value="${currentSample.ppTsf ?? ''}"></label>` : `<div class="pill">GB samples do not use Recovery or PP</div><div></div>`}
+    ${showRecPP ? `<label>Recovery (in) <input id="recIn" type="number" step="0.5" value="${currentSample.recoveryIn ?? ''}"></label>` : `<div class="pill">GB samples do not use Recovery or PP</div>`}
+    ${showPP ? `<label>PP (tsf) <input id="ppTsf" type="number" step="0.25" value="${currentSample.ppTsf ?? ''}"></label>` : `<div class="pill">PP only for fine soils / same as above</div>`}
     <label id="photoLabel">${renderPhotoLabel((currentSample.photos||[]).length)}
       <input id="photoInput" type="file" accept="image/*" capture="environment" multiple>
     </label>
-    ${isShelby(currentSample.number) ? '<div class="pill">Shelby writes Same as above, wet</div>' : ''}
+    ${isShelby(currentSample.number) ? '<div class="pill">Shelby writes Same as above, wet</div>' : '<div></div>'}
   `;
   body.appendChild(grid);
 
-  // Photo preview with enlarge
   const photoPreview = document.createElement('div');
   photoPreview.id = 'samplePhotoPreview';
   photoPreview.className = 'preview';
@@ -1300,58 +1377,62 @@ function renderSampleWizard(){
   }
   body.appendChild(photoPreview);
 
-  // Enlarge photo handler
   setTimeout(()=>{
     photoPreview.querySelectorAll('img[data-photo-idx]').forEach(img => {
       img.onclick = () => {
         const idx = Number(img.dataset.photoIdx);
-        const modal = document.createElement('div');
-        modal.className = 'photo-enlarge-modal';
-        modal.innerHTML = `<img src="${currentSample.photos[idx].photoDataUrl}" alt="Sample Photo">`;
-        const closeBtn = document.createElement('button');
-        closeBtn.className = 'photo-enlarge-close';
-        closeBtn.innerHTML = '×';
-        closeBtn.onclick = () => document.body.removeChild(modal);
-        modal.appendChild(closeBtn);
-        modal.onclick = e => { if(e.target === modal) document.body.removeChild(modal); };
-        document.body.appendChild(modal);
+        showImageModal(currentSample.photos[idx].photoDataUrl, 'Sample Photo');
       };
     });
   }, 0);
 
   setTimeout(()=>{
-    if(showRecPP){
+    if(showRecPP && $('recIn')){
       $('recIn').oninput = e=>currentSample.recoveryIn = e.target.value==='' ? null : Number(e.target.value);
+    }
+    if(showPP && $('ppTsf')){
       $('ppTsf').oninput = e=>{
         currentSample.ppTsf = e.target.value==='' ? null : Number(e.target.value);
         $('samplePreview').textContent = buildDesc(currentSample);
       };
     }
-    $('photoInput').onchange = async e=>{
-      const label = $('photoLabel');
-      label.firstChild.textContent = 'Loading';
-      const files = Array.from(e.target.files || []);
-      for(const f of files) currentSample.photos.push(await photoRef(f));
-      label.firstChild.textContent = renderPhotoLabel((currentSample.photos||[]).length);
-      renderSampleWizard();
-    };
+    const photoInput = $('photoInput');
+    if(photoInput){
+      photoInput.onchange = async e=>{
+        if(!currentBoring.header.pointId.trim()){
+          toast('Save boring header before adding photos', true);
+          e.target.value = '';
+          return;
+        }
+        if(!currentSample.number.trim()){
+          toast('Enter sample number before adding photos', true);
+          e.target.value = '';
+          return;
+        }
+        const label = $('photoLabel');
+        label.firstChild.textContent = 'Loading';
+        const files = Array.from(e.target.files || []);
+        for(const f of files) currentSample.photos.push(await photoRef(f));
+        label.firstChild.textContent = renderPhotoLabel((currentSample.photos||[]).length);
+        renderSampleWizard();
+      };
+    }
   });
 }
 
-async function photoRef(file){
-  // Skip geolocation, store photo as DataURL
+async function photoRef(file, opts = {}){
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = function(e) {
       resolve({
         photoId: crypto.randomUUID(),
-        pointId: currentBoring.header.pointId || '',
-        sampleNumber: currentSample.number,
-        topDepth: currentSample.topDepth,
-        bottomDepth: currentSample.bottomDepth,
+        pointId: currentBoring?.header?.pointId || '',
+        sampleNumber: opts.isPatch ? 'PATCH' : (currentSample?.number || ''),
+        topDepth: opts.isPatch ? '' : currentSample?.topDepth,
+        bottomDepth: opts.isPatch ? '' : currentSample?.bottomDepth,
         localAssetRef: file.name,
         fileName: file.name,
-        photoDataUrl: e.target.result, // Store DataURL
+        photoDataUrl: e.target.result,
         capturedAtDevice: nowETInput(),
         exifCapturedAt: null
       });
@@ -1376,11 +1457,28 @@ function maybeAutoEnd(sample){
   }
 }
 
+function hasDepthOverlap(sample){
+  if(sample.topDepth === null || sample.bottomDepth === null) return false;
+  const aTop = Number(sample.topDepth);
+  const aBot = Number(sample.bottomDepth);
+  return currentBoring.samples.some((s, i) => {
+    if(editingSampleIndex === i) return false;
+    const bTop = Number(s.topDepth);
+    const bBot = Number(s.bottomDepth);
+    if(Number.isNaN(bTop) || Number.isNaN(bBot)) return false;
+    return aTop < bBot && aBot > bTop;
+  });
+}
+
 async function saveSample(){
   updateSampleMeta();
 
-  if(!currentSample.number || currentSample.topDepth===null){
-    toast('Sample number and top depth are required',true);
+  if(!currentSample.number || currentSample.topDepth===null || currentSample.bottomDepth===null){
+    toast('Sample number, top depth, and bottom depth are required',true);
+    return;
+  }
+  if(Number(currentSample.bottomDepth) <= Number(currentSample.topDepth)){
+    toast('Bottom depth must be greater than top depth', true);
     return;
   }
   if(!currentSample.sameAsAbove && !currentSample.primaryFamily && !isShelby(currentSample.number)){
@@ -1395,11 +1493,17 @@ async function saveSample(){
     toast('Duplicate sample number',true);
     return;
   }
+  if(hasDepthOverlap(currentSample)){
+    toast('Sample depth overlaps an existing sample', true);
+    return;
+  }
 
   if(isGB(currentSample.number)){
     currentSample.recoveryIn = null;
     currentSample.ppTsf = null;
   }
+
+  if(!ppAllowedForSample(currentSample)) currentSample.ppTsf = null;
 
   if(isShelby(currentSample.number)){
     currentSample.sameAsAbove = true;
@@ -1535,55 +1639,22 @@ function buildGintWorkbook(borings,settings){
   return wb;
 }
 
-function buildPhotoWorkbook(borings,settings){
-  const wb = XLSX.utils.book_new();
-  const folders=[PHOTO_SHEETS['PHOTO FOLDERS']], log=[PHOTO_SHEETS['PHOTO LOG']];
-
-  borings.forEach(b=>{
-    const folderId = b.header.pointId;
-    const folderPath = `GeoLog Photos/${folderId}/`;
-    const folderLink = folderPath;
-
-    folders.push([
-      folderId,
-      settings.project||'',
-      b.header.pointId,
-      b.header.inspector||settings.inspector||'',
-      b.header.pointId,
-      folderPath,
-      folderLink,
-      fmtET(new Date().toISOString()),
-      ''
-    ]);
-
-    b.samples.forEach(s=>{
-      (s.photos||[]).forEach(p=>{
-        log.push([
-          b.id,
-          b.header.pointId,
-          s.number,
-          s.topDepth,
-          s.bottomDepth ?? '',
-          p.photoId,
-          p.fileName,
-          folderId,
-          folderLink,
-          fmtET(p.capturedAtDevice||''),
-          fmtET(p.exifCapturedAt||''),
-          p.latitude ?? '',
-          p.longitude ?? '',
-          p.accuracyMeters ?? '',
-          p.gpsSource || 'none',
-          b.header.inspector||settings.inspector||'',
-          ''
-        ]);
-      });
-    });
+async function ensureJSZip(){
+  if(window.JSZip) return;
+  await new Promise((resolve, reject) => {
+    const existing = document.querySelector('script[data-jszip="true"]');
+    if(existing){
+      existing.addEventListener('load', resolve, { once:true });
+      existing.addEventListener('error', reject, { once:true });
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    script.dataset.jszip = 'true';
+    script.onload = resolve;
+    script.onerror = reject;
+    document.body.appendChild(script);
   });
-
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(folders), 'PHOTO FOLDERS');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(log), 'PHOTO LOG');
-  return wb;
 }
 
 $('newBoring').onclick = newBoring;
@@ -1599,7 +1670,7 @@ $('toggleInfo').onclick = ()=>{
 $('toggleBoringInfo').onclick = ()=>{
   const hidden1 = $('boringInfoFields').classList.toggle('hidden');
   const hidden2 = $('boringInfoFields2').classList.toggle('hidden');
-  const hidden = hidden1 && hidden2; // if both are hidden now
+  const hidden = hidden1 && hidden2;
   $('toggleBoringInfo').textContent = hidden ? 'Show Info' : 'Hide Info';
 };
 
@@ -1688,7 +1759,6 @@ $('exportGint').onclick = async()=>{
   const borings = await DB.all('borings');
   if(!borings.length) return toast('No borings to export',true);
   const settings = await getSettings();
-  // Build filename: date_field_logs_inspector initials.xlsx
   const date = new Date().toISOString().slice(0,10);
   let initials = '';
   if(settings.inspector) {
@@ -1698,21 +1768,17 @@ $('exportGint').onclick = async()=>{
   XLSX.writeFile(buildGintWorkbook(borings,settings), filename);
 };
 
-// Export photos as ZIP file
 $('exportPhotos').onclick = async()=>{
   const borings = await DB.all('borings');
   if(!borings.length) return toast('No borings to export',true);
-  // Collect all photos, including Patch
   const photos = [];
   borings.forEach(b => {
-    // Patch photo
     if(b.patchPhoto && b.patchPhoto.photoDataUrl) {
       photos.push({
         name: `${b.header.pointId}_PATCH_${b.patchPhoto.fileName}`,
         dataUrl: b.patchPhoto.photoDataUrl
       });
     }
-    // Sample photos
     b.samples.forEach(s => {
       (s.photos||[]).forEach(p => {
         if(p.photoDataUrl) {
@@ -1725,30 +1791,24 @@ $('exportPhotos').onclick = async()=>{
     });
   });
   if(!photos.length) return toast('No photos found',true);
-  // Use JSZip to create ZIP
+
   toast('Preparing ZIP...');
-  const script = document.createElement('script');
-  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
-  script.onload = async () => {
-    const zip = new JSZip();
-    photos.forEach(p => {
-      // Convert DataURL to Blob
-      const arr = p.dataUrl.split(','), mime = arr[0].match(/:(.*?);/)[1];
-      const bstr = atob(arr[1]);
-      let n = bstr.length;
-      const u8arr = new Uint8Array(n);
-      while(n--) u8arr[n] = bstr.charCodeAt(n);
-      zip.file(p.name, new Blob([u8arr], {type: mime}));
-    });
-    zip.generateAsync({type:'blob'}).then(blob => {
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `GeoLog_Photos_${new Date().toISOString().slice(0,10)}.zip`;
-      link.click();
-      toast('ZIP ready for download');
-    });
-  };
-  document.body.appendChild(script);
+  await ensureJSZip();
+  const zip = new JSZip();
+  photos.forEach(p => {
+    const arr = p.dataUrl.split(','), mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while(n--) u8arr[n] = bstr.charCodeAt(n);
+    zip.file(p.name, new Blob([u8arr], {type: mime}));
+  });
+  const blob = await zip.generateAsync({type:'blob'});
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `GeoLog_Photos_${new Date().toISOString().slice(0,10)}.zip`;
+  link.click();
+  toast('ZIP ready for download');
 };
 
 (async function(){
