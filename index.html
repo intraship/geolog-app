@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -108,6 +109,26 @@
     .toast.show{opacity:1}
     .casing-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px}
     .compact-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    /* Always use single horizontal row per field */
+    #settings .grid2,
+    #boring .grid2{grid-template-columns:1fr}
+    #settings .grid2 > label,
+    #boring .grid2 > label,
+    #settings .card > label,
+    #boring .card > label{
+      display:grid;
+      grid-template-columns:120px minmax(0,1fr);
+      align-items:center;
+      gap:10px;
+      margin-bottom:8px;
+    }
+    #settings .grid2 > label input,
+    #boring .grid2 > label input,
+    #settings .card > label input,
+    #boring .card > label input{
+      width:100%;
+      min-width:0;
+    }
     @media (max-width:640px){
       .grid2,.grid3,.stats{grid-template-columns:1fr 1fr}
     }
@@ -1091,101 +1112,96 @@ function renderSampleWizard(){
   };
 
   if(sampleStep===0 && !isGB(currentSample.number) && !isShelby(currentSample.number)){
-  setTitle('Blow Count','Step 1/5');
+    setTitle('Blow Count','Step 1/5');
 
-  const div = document.createElement('div');
-  div.className = 'grid2';
+    const div = document.createElement('div');
+    div.className = 'grid2';
 
-  ['1st','2nd','3rd','4th'].forEach((lab, idx) => {
-    const wrap = document.createElement('div');
-    wrap.className = 'card';
+    ['1st','2nd','3rd','4th'].forEach((lab, idx) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'card';
 
-    const title = document.createElement('div');
-    title.textContent = `${lab} Interval`;
-    title.style.marginBottom = '8px';
-    title.style.fontWeight = '700';
+      const title = document.createElement('div');
+      title.textContent = `${lab} Interval`;
+      title.style.marginBottom = '8px';
+      title.style.fontWeight = '700';
 
-    const getDisplayValue = () => {
-      const v = currentSample.blows[idx];
-      return (v === '' || v === null || v === undefined) ? '0' : String(v);
-    };
+      const getDisplayValue = () => {
+        const v = currentSample.blows[idx];
+        return (v === '' || v === null || v === undefined) ? 'WOH' : String(v);
+      };
 
-    const setValue = (value) => {
-      const clean = Math.max(0, Number(value) || 0);
-      currentSample.blows[idx] = clean;
-      tapBtn.textContent = String(clean);
-      manual.value = clean === 0 ? '' : String(clean);
-    };
+      const setValue = (value) => {
+        if (value === '' || value === null || value === undefined) {
+          currentSample.blows[idx] = '';
+          tapBtn.textContent = 'WOH';
+          manual.value = '';
+          return;
+        }
+        const clean = Math.max(1, Number(value) || 1);
+        currentSample.blows[idx] = clean;
+        tapBtn.textContent = String(clean);
+        manual.value = String(clean);
+      };
 
-    const tapBtn = document.createElement('button');
-    tapBtn.type = 'button';
-    tapBtn.className = 'wide primary';
-    tapBtn.style.fontSize = '34px';
-    tapBtn.style.fontWeight = '800';
-    tapBtn.style.padding = '26px 16px';
-    tapBtn.style.marginBottom = '10px';
-    tapBtn.textContent = getDisplayValue();
+      const tapBtn = document.createElement('button');
+      tapBtn.type = 'button';
+      tapBtn.className = 'wide primary';
+      tapBtn.style.fontSize = '34px';
+      tapBtn.style.fontWeight = '800';
+      tapBtn.style.padding = '26px 16px';
+      tapBtn.style.marginBottom = '10px';
+      tapBtn.textContent = getDisplayValue();
 
-    tapBtn.onclick = () => {
-      const curr = Number(currentSample.blows[idx] || 0);
-      setValue(curr + 1);
-    };
+      tapBtn.onclick = () => {
+        const curr = currentSample.blows[idx];
+        if (curr === '' || curr === null || curr === undefined) {
+          setValue(1);
+          return;
+        }
+        setValue(Number(curr) + 1);
+      };
 
-    const row = document.createElement('div');
-    row.className = 'row';
-    row.style.marginBottom = '10px';
+      const manualLabel = document.createElement('label');
+      manualLabel.style.display = 'flex';
+      manualLabel.style.flexDirection = 'column';
+      manualLabel.style.alignItems = 'stretch';
+      manualLabel.style.gap = '6px';
+      manualLabel.style.marginBottom = '0';
+      manualLabel.textContent = 'Manual edit';
 
-    const minus = document.createElement('button');
-    minus.type = 'button';
-    minus.textContent = '-1';
-    minus.onclick = () => {
-      const curr = Number(currentSample.blows[idx] || 0);
-      setValue(Math.max(0, curr - 1));
-    };
+      const manual = document.createElement('input');
+      manual.type = 'text';
+      manual.inputMode = 'numeric';
+      manual.placeholder = 'Enter count';
+      manual.value = getDisplayValue() === 'WOH' ? '' : getDisplayValue();
 
-    row.appendChild(minus);
+      manual.oninput = (e) => {
+        const raw = e.target.value.replace(/[^\d]/g, '');
+        if (raw === '') {
+          currentSample.blows[idx] = '';
+          tapBtn.textContent = 'WOH';
+          e.target.value = '';
+          return;
+        }
+        const num = Math.max(1, Number(raw));
+        currentSample.blows[idx] = num;
+        tapBtn.textContent = String(num);
+        e.target.value = String(num);
+      };
 
-    const manualLabel = document.createElement('label');
-    manualLabel.style.display = 'flex';
-    manualLabel.style.flexDirection = 'column';
-    manualLabel.style.alignItems = 'stretch';
-    manualLabel.style.gap = '6px';
-    manualLabel.style.marginBottom = '0';
-    manualLabel.textContent = 'Manual edit';
+      manualLabel.appendChild(manual);
 
-    const manual = document.createElement('input');
-    manual.type = 'text';
-    manual.inputMode = 'numeric';
-    manual.placeholder = 'Enter count';
-    manual.value = getDisplayValue() === '0' ? '' : getDisplayValue();
+      wrap.appendChild(title);
+      wrap.appendChild(tapBtn);
+      wrap.appendChild(manualLabel);
 
-    manual.oninput = (e) => {
-      const raw = e.target.value.replace(/[^\d]/g, '');
-      if (raw === '') {
-        currentSample.blows[idx] = '';
-        tapBtn.textContent = '0';
-        e.target.value = '';
-        return;
-      }
-      const num = Number(raw);
-      currentSample.blows[idx] = num;
-      tapBtn.textContent = String(num);
-      e.target.value = String(num);
-    };
+      div.appendChild(wrap);
+    });
 
-    manualLabel.appendChild(manual);
-
-    wrap.appendChild(title);
-    wrap.appendChild(tapBtn);
-    wrap.appendChild(row);
-    wrap.appendChild(manualLabel);
-
-    div.appendChild(wrap);
-  });
-
-  body.appendChild(div);
-  return;
-}
+    body.appendChild(div);
+    return;
+  }
 
   if(sampleStep===1 && !isShelby(currentSample.number)){
     setTitle('Primary Component',`Step ${isGB(currentSample.number)?1:2}/5`);
