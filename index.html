@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>GeoLogger v0.80</title>
+  <title>GeoLogger v0.90</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     :root{
@@ -29,7 +29,7 @@
     .main{padding:12px;max-width:780px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
     .screen{display:none}
     .screen.active{display:flex;flex-direction:column;gap:12px}
-    .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;width:100%;overflow:hidden}
     h3,h4{margin:0 0 10px}
     label{
       display:flex;flex-direction:row;align-items:center;gap:8px;font-size:14px;color:var(--muted);margin-bottom:10px
@@ -37,7 +37,7 @@
     input,textarea,button,select{font:inherit}
     input,textarea,select{
       background:#11110f;color:var(--text);border:1px solid var(--line);
-      border-radius:12px;padding:16px
+      border-radius:12px;padding:16px;width:100%;max-width:100%;min-width:0
     }
     textarea{min-height:100px;max-width:100%;box-sizing:border-box;}
     .photo-enlarge-modal {
@@ -59,7 +59,7 @@
     }
     button{
       background:#2a2a26;color:var(--text);border:1px solid var(--line);
-      border-radius:12px;padding:16px 20px;cursor:pointer
+      border-radius:12px;padding:16px 20px;cursor:pointer;max-width:100%
     }
     button.primary{background:var(--accent);border-color:var(--accent);color:white}
     button.wide{width:100%;margin-bottom:10px}
@@ -98,16 +98,16 @@
     .swatch{height:48px;border-radius:12px;border:2px solid transparent}
     .swatch.selected{border-color:#fff}
     .hidden{display:none!important}
-    .sample-inputs{display:flex;gap:12px;margin-bottom:10px}
-    #sNumber{width:80px}
-    #sTop,#sBottom{width:60px}
+    .sample-inputs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:10px}
+    #sNumber{width:100%}
+    #sTop,#sBottom{width:100%}
     .toast{
       position:fixed;left:50%;transform:translateX(-50%);bottom:16px;background:var(--green);
       color:#fff;padding:10px 16px;border-radius:999px;opacity:0;transition:opacity .2s;
       pointer-events:none;z-index:80
     }
     .toast.show{opacity:1}
-    .casing-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px}
+    .casing-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px}.field-inline{display:flex;gap:8px;align-items:center;min-width:0;width:100%}.field-inline>*{min-width:0}.segmented{display:flex;gap:8px;flex-wrap:wrap}.segmented .selected{border-color:var(--accent);color:var(--accent)}.narrow-input{width:80px!important;max-width:80px!important}.casing-entry{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
     .compact-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
     /* Always use single horizontal row per field */
     #settings .grid2,
@@ -130,7 +130,9 @@
       min-width:0;
     }
     @media (max-width:640px){
-      .grid2,.grid3,.stats{grid-template-columns:1fr 1fr}
+      .grid2,.grid3,.stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .sample-inputs{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+      .color-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
     }
   </style>
 </head>
@@ -142,24 +144,16 @@
     </div>
   </header>
 
-  <div class="version">VERSION: v0.80 · Field/Office Tool</div>
+  <div class="version">VERSION: v0.90 · Field/Office Tool</div>
 
   <main class="main">
     <section id="home" class="screen active">
       <div class="card">
-        <div class="stats">
-          <div class="stat"><div id="statBorings" class="num">0</div><div class="lbl">Borings</div></div>
-          <div class="stat"><div id="statSamples" class="num">0</div><div class="lbl">Samples</div></div>
-          <div class="stat"><div id="statUndist" class="num">0</div><div class="lbl">Undisturbed</div></div>
-          <div class="stat"><div id="statPhotos" class="num">0</div><div class="lbl">Photos</div></div>
-        </div>
-        <button id="newBoring" class="primary wide">New Boring</button>
-        <button id="exportGint" class="wide">Export Field Logs</button>
-        <button id="exportPhotos" class="wide">Export Photos</button>
-        <button id="openSettings" class="wide">Report Info</button>
+        <h3>Field Log Report</h3>
+        <button id="openSettings" class="primary wide">Start Report</button>
       </div>
       <div class="card">
-        <h3>My Borings</h3>
+        <h3>Saved Borings</h3>
         <div id="boringList" class="stack"></div>
       </div>
     </section>
@@ -167,7 +161,7 @@
     <section id="settings" class="screen">
       <div class="card">
         <div class="row between">
-          <h3>Report Info</h3>
+          <h3>Start Report</h3>
           <button id="toggleInfo">Show Info</button>
         </div>
 
@@ -176,9 +170,9 @@
           <label>Driller <input id="cfgDriller" placeholder="Driller Name"></label>
           <label>Helper <input id="cfgHelper" placeholder="Helper Name"></label>
           <label>Rig # <input id="cfgRigNo" placeholder="14"></label>
-          <label>Rig Type <input id="cfgRigType" placeholder="CME-55"></label>
-          <label>Rig Condition <input id="cfgRigCondition" placeholder="Good"></label>
-          <label>Weather <input id="cfgWeather" placeholder="37°F / Sunny"></label>
+          <label>Rig Type <select id="cfgRigType"><option value=""></option><option value="CME-55">CME-55</option><option value="CME-750">CME-750</option><option value="Other">Other</option></select></label>
+          <label>Condition <select id="cfgRigCondition"><option value=""></option><option value="New">New</option><option value="Good">Good</option><option value="Poor">Poor</option></select></label>
+          <label>Weather <div class="field-inline"><input id="cfgWeatherTemp" class="narrow-input" type="number" step="1" placeholder="#"><select id="cfgWeatherSky"><option value=""></option><option value="Sunny">Sunny</option><option value="Cloudy">Cloudy</option><option value="Partly Cloudy">Partly Cloudy</option><option value="Clear">Clear</option></select></div></label>
           <label>Location <input id="cfgLocation" placeholder="Penns Grove Auburn Rd / Rdwy"></label>
         </div>
 
@@ -193,14 +187,15 @@
         </div>
 
         <div class="bottom-actions">
+          <button id="newBoringFromSettings" class="primary">New Boring</button>
           <button id="homeFromSettings">Home</button>
-          <button id="saveDefaults" class="primary">Save Defaults</button>
+          <button id="saveDefaults" class="primary">Save Report Info</button>
         </div>
       </div>
     </section>
 
     <section id="boring" class="screen">
-      <div class="card">
+      <div class="card hidden" id="boringHeaderCard">
         <div class="row between">
           <h3>Boring Header</h3>
           <div>
@@ -215,48 +210,70 @@
           <label>Helper <input id="bhHelper" placeholder="Helper Name"></label>
           <label>Inspector <input id="bhInspector" placeholder="Inspector Name"></label>
           <label>Rig # <input id="bhRigNo" placeholder="14"></label>
-          <label>Rig Type <input id="bhRigType" placeholder="CME-55"></label>
+          <label>Rig Type <select id="bhRigType"><option value=""></option><option value="CME-55">CME-55</option><option value="CME-750">CME-750</option><option value="Other">Other</option></select></label>
+          <label>Condition <select id="bhRigCondition"><option value=""></option><option value="New">New</option><option value="Good">Good</option><option value="Poor">Poor</option></select></label>
           </div>
           <label>Hole Depth <input id="bhHoleDepth" type="number" step="0.5" placeholder="102"></label>
           <div id="boringInfoFields2" class="hidden">
-          <label>Weather <input id="bhWeather" placeholder="37°F / Sunny"></label>
+          <label>Weather <div class="field-inline"><input id="bhWeatherTemp" class="narrow-input" type="number" step="1" placeholder="#"><select id="bhWeatherSky"><option value=""></option><option value="Sunny">Sunny</option><option value="Cloudy">Cloudy</option><option value="Partly Cloudy">Partly Cloudy</option><option value="Clear">Clear</option></select></div></label>
           <label>GW Depth <input id="bhGwDepth" type="number" step="0.5" placeholder="17.5"></label>
           <label>GW DateTime <input id="bhGwDateTime" type="datetime-local"></label>
           </div>
 
-        <div class="hidden" style="font-size:13px;color:var(--muted);margin-bottom:6px">General Remarks</div>
-        <div id="remarkButtons" class="choice-grid hidden"></div>
-        <label class="hidden">Additional Remarks <textarea id="bhRemarks" placeholder="Remarks"></textarea></label>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:6px">General Remarks</div>
+        <div id="remarkButtons" class="choice-grid"></div>
+        <label>Additional Remarks <textarea id="bhRemarks" placeholder="Remarks"></textarea></label>
 
+      </div>
+
+      <div class="card">
+        <div class="row between">
+          <h3>Samples</h3>
+          <span id="sampleHeaderMeta" class="pill">Draft · Hole — ft</span>
+        </div>
+        <div id="sampleList" class="stack"></div>
+        <button id="addSampleInline" class="primary wide">ADD SAMPLE</button>
+      </div>
+
+      <div class="bottom-actions">
+        <button id="homeFromBoring">Home</button>
+        <button id="saveBoring" class="primary">Edit Header</button>
+        <button id="editCasing">Edit Casing</button>
+        <button id="addShelby">Add Shelby</button>
+        <button id="saveExit" class="primary">Patch Photo &amp; Review</button>
+      </div>
+    </section>
+
+    <section id="review" class="screen">
+      <div class="card">
+        <div class="row between">
+          <h3>Patch Photo &amp; Review</h3>
+          <span id="reviewTag" class="pill">Review</span>
+        </div>
         <label id="patchPhotoLabel">Patch Photo
           <input id="patchPhotoInput" type="file" accept="image/*" capture="environment">
         </label>
         <div id="patchPhotoPreview" class="preview"></div>
       </div>
 
-      <div class="card">
-        <div class="row between">
-          <h3>Samples</h3>
-          <span id="sampleCount" class="pill">0</span>
-        </div>
-        <div id="sampleList" class="stack"></div>
+      <div class="card review-block">
+        <div class="review-section-title">Boring Header</div>
+        <div id="reviewHeader" class="stack"></div>
       </div>
 
-      <div class="card">
-        <div class="row between">
-          <h3>Casing</h3>
-          <span id="casingCount" class="pill">0</span>
-        </div>
-        <div id="casingList" class="stack"></div>
+      <div class="card review-block">
+        <div class="review-section-title">Samples</div>
+        <div id="reviewSamples" class="stack"></div>
+      </div>
+
+      <div class="card review-block">
+        <div class="review-section-title">Casing</div>
+        <div id="reviewCasing" class="stack"></div>
       </div>
 
       <div class="bottom-actions">
-        <button id="homeFromBoring">Home</button>
-        <button id="saveBoring" class="primary">Save Header</button>
-        <button id="editCasing">Edit Casing</button>
-        <button id="addSample" class="primary">Add Sample</button>
-        <button id="addShelby">Add Shelby</button>
-        <button id="saveExit" class="primary hidden">Save & Exit</button>
+        <button id="backFromReview">Back</button>
+        <button id="saveExportReview" class="primary">Save &amp; Export</button>
       </div>
     </section>
 
@@ -264,10 +281,19 @@
       <div class="card">
         <div class="row between">
           <h3>Casing Entries</h3>
-          <span class="pill">Depth / Blows</span>
+          <span class="pill">Start depth / total blows</span>
         </div>
-        <div id="casingRows" class="stack"></div>
-        <button id="addCasingRow">+ Add Row</button>
+        <div class="stack">
+          <label>Starting hammer depth <input id="casingStartDepth" type="number" step="1" placeholder="30"></label>
+          <div class="segmented">
+            <button id="casingInterval5" type="button" class="selected">5ft casing</button>
+            <button id="casingInterval10" type="button">10ft casing</button>
+          </div>
+          <button id="casingTap" type="button" class="primary wide">PUSH</button>
+          <label>Manual total blows <input id="casingManual" type="number" step="1" placeholder="Tap or enter"></label>
+          <button id="addCasingEntry" type="button">Add / Update Entry</button>
+          <div id="casingRows" class="stack"></div>
+        </div>
         <div class="bottom-actions">
           <button id="backFromCasing">Back</button>
           <button id="saveCasing" class="primary">Save Casing</button>
@@ -297,6 +323,7 @@
       </div>
 
       <div class="bottom-actions">
+        <button id="cancelSample">Cancel</button>
         <button id="prevStep">Back</button>
         <button id="nextStep" class="primary">Next</button>
         <button id="finishNow" class="hidden">Finish</button>
@@ -308,7 +335,7 @@
   <div id="toast" class="toast"></div>
 
   <script>
-const APP_VERSION = 'v0.80';
+const APP_VERSION = 'v0.90';
 const DEFAULTS = {
   project:'NJ Turnpike 1 to 4 Capacity Enhancements Program',
   contractNo:'OPS No. T3839',
@@ -463,6 +490,9 @@ function isGB(n){ return String(n||'').toUpperCase().startsWith('GB-'); }
 function isShelby(n){ return String(n||'').toUpperCase().startsWith('U-'); }
 function num(n){ const m=String(n||'').match(/-(\d+)/); return m?parseInt(m[1],10):0; }
 function ppAllowedForSample(s){ return !!(s.sameAsAbove || s.primaryFamily==='SILT/CLAY' || isShelby(s.number)); }
+function parseWeatherValue(v){ const m=String(v||'').match(/(-?\d+)\s*°?F\s*\/\s*(.+)$/i); if(m) return {temp:m[1], sky:m[2].trim()}; return {temp:'', sky:String(v||'').trim()}; }
+function composeWeatherValue(temp, sky){ const t=String(temp||'').trim(); const s=String(sky||'').trim(); if(t && s) return `${t}°F / ${s}`; if(t) return `${t}°F`; return s; }
+function materialAndRemarksForExport(s){ let out=buildDesc(s); if(ppAllowedForSample(s) && s.ppTsf!==null && s.ppTsf!=='' && s.ppTsf!==undefined) out += `\nPP= ${s.ppTsf} tsf`; return out; }
 
 function nextSuggestion(samples){
   const usedRanges = new Set(samples.map(s=>`${s.topDepth}-${s.bottomDepth}`));
@@ -725,59 +755,25 @@ async function hydrateHome(){
   $('cfgRigNo').value = s.rigNo || '';
   $('cfgRigType').value = s.rigType || '';
   $('cfgRigCondition').value = s.rigCondition || '';
-  $('cfgWeather').value = s.weather || '';
+  const cfgWeather = parseWeatherValue(s.weather || '');
+  $('cfgWeatherTemp').value = cfgWeather.temp || '';
+  $('cfgWeatherSky').value = cfgWeather.sky || '';
   $('cfgLocation').value = s.location || '';
-
   const borings = await DB.all('borings');
-
-  $('statBorings').textContent = borings.length;
-  $('statSamples').textContent = borings.reduce((a,b)=>a+b.samples.length,0);
-  $('statUndist').textContent = borings.reduce((a,b)=>a+b.samples.filter(s=>isShelby(s.number)).length,0);
-  $('statPhotos').textContent = borings.reduce((a,b)=>a+b.samples.reduce((x,s)=>x+(s.photos||[]).length,0),0) + borings.reduce((a,b)=>a+(b.patchPhoto ? 1 : 0),0);
-
   $('boringList').innerHTML = '';
-  if(!borings.length){
-    $('boringList').innerHTML = '<div class="item">No borings yet.</div>';
-    return;
-  }
-
+  if(!borings.length){ $('boringList').innerHTML = '<div class="item">No borings yet.</div>'; return; }
   borings.forEach(b=>{
     const undist = (b.samples||[]).filter(s=>String(s.number||'').toUpperCase().startsWith('U-')).length;
     const photos = (b.samples||[]).reduce((a,s)=>a+((s.photos||[]).length),0) + (b.patchPhoto ? 1 : 0);
-
     const div = document.createElement('div');
     div.className = 'item';
-    div.innerHTML = `
-      <div class="title">${b.header.pointId || 'Untitled boring'}</div>
-      <div>${b.samples.length} samples · ${undist} undisturbed · ${photos} photos · Hole ${b.header.holeDepth || '—'} ft</div>
-    `;
-
+    div.innerHTML = `<div class="title">${b.header.pointId}</div><div>${b.samples.length} samples · ${undist} undisturbed · ${photos} photos · Hole ${b.header.holeDepth || '—'} ft</div>`;
     const row = document.createElement('div');
     row.className = 'compact-actions';
-
-    const open = document.createElement('button');
-    open.textContent = 'Open';
-    open.onclick = ()=>openBoring(b.id);
-
-    const exp = document.createElement('button');
-    exp.textContent = 'Export';
-    exp.onclick = async ()=>{
-      const wb = buildGintWorkbook([b], await getSettings());
-      XLSX.writeFile(wb, `${String(b.header.pointId || 'boring').replace(/[^a-z0-9_-]+/gi,'_')}.xlsx`);
-    };
-
-    const del = document.createElement('button');
-    del.textContent = 'Delete';
-    del.onclick = async ()=>{
-      if(!confirm('Delete this boring?')) return;
-      await DB.delete('borings', b.id);
-      await hydrateHome();
-      toast('Boring deleted');
-    };
-
-    row.append(open, exp, del);
-    div.appendChild(row);
-    $('boringList').appendChild(div);
+    const open = document.createElement('button'); open.textContent='Open'; open.onclick=()=>openBoring(b.id || b.header.pointId);
+    const exp = document.createElement('button'); exp.textContent='Export'; exp.onclick=async()=>{ const wb = buildGintWorkbook([b], await getSettings()); XLSX.writeFile(wb, `${String(b.header.pointId).replace(/[^a-z0-9_-]+/gi,'_')}.xlsx`); };
+    const del = document.createElement('button'); del.textContent='Delete'; del.onclick=async()=>{ if(!confirm('Delete this boring?')) return; const db = await DB.open(); const tx = db.transaction('borings','readwrite'); tx.objectStore('borings').delete(b.id || b.header.pointId); tx.oncomplete=async()=>{ await hydrateHome(); toast('Boring deleted'); }; };
+    row.append(open, exp, del); div.appendChild(row); $('boringList').appendChild(div);
   });
 }
 
@@ -794,7 +790,7 @@ async function saveDefaults(){
     rigNo:$('cfgRigNo').value.trim(),
     rigType:$('cfgRigType').value.trim(),
     rigCondition:$('cfgRigCondition').value.trim(),
-    weather:$('cfgWeather').value.trim(),
+    weather:composeWeatherValue($('cfgWeatherTemp').value, $('cfgWeatherSky').value),
     location:$('cfgLocation').value.trim()
   };
   await DB.put('settings','defaults',d);
@@ -820,6 +816,7 @@ async function newBoring(){
       engineer:s.engineer || '',
       rigNo:s.rigNo || '',
       rigType:s.rigType || '',
+      rigCondition:s.rigCondition || '',
       holeDepth:null,
       gwDepth:null,
       gwDateTime:'',
@@ -834,6 +831,7 @@ async function newBoring(){
   fillBoringForm();
   renderBoringLists();
   updateSaveExitState();
+  $('boringHeaderCard').classList.remove('hidden');
   showScreen('boring');
 }
 
@@ -846,6 +844,7 @@ async function openBoring(id){
   fillBoringForm();
   renderBoringLists();
   updateSaveExitState();
+  $('boringHeaderCard').classList.add('hidden');
   showScreen('boring');
 }
 
@@ -858,8 +857,11 @@ function fillBoringForm(){
   $('bhInspector').value = h.inspector || '';
   $('bhRigNo').value = h.rigNo || '';
   $('bhRigType').value = h.rigType || '';
+  $('bhRigCondition').value = h.rigCondition || '';
   $('bhHoleDepth').value = h.holeDepth ?? '';
-  $('bhWeather').value = h.weather || '';
+  const bhWeather = parseWeatherValue(h.weather || '');
+  $('bhWeatherTemp').value = bhWeather.temp || '';
+  $('bhWeatherSky').value = bhWeather.sky || '';
   $('bhGwDepth').value = h.gwDepth ?? '';
   $('bhGwDateTime').value = h.gwDateTime || '';
   const lines = String(h.generalRemarks||'').split('\n').map(x=>x.trim()).filter(Boolean);
@@ -924,8 +926,9 @@ function collectBoringForm(){
     inspector:$('bhInspector').value.trim(),
     rigNo:$('bhRigNo').value.trim(),
     rigType:$('bhRigType').value.trim(),
+    rigCondition:$('bhRigCondition').value.trim(),
     holeDepth:$('bhHoleDepth').value ? Number($('bhHoleDepth').value) : null,
-    weather:$('bhWeather').value.trim(),
+    weather:composeWeatherValue($('bhWeatherTemp').value, $('bhWeatherSky').value),
     gwDepth:$('bhGwDepth').value ? Number($('bhGwDepth').value) : null,
     gwDateTime:$('bhGwDateTime').value,
     generalRemarks:orderedRemarks()
@@ -957,18 +960,17 @@ function sampleSubtitle(s){
 }
 
 function renderBoringLists(){
-  $('sampleCount').textContent = String(currentBoring.samples.length);
-  $('casingCount').textContent = String((currentBoring.casing||[]).length);
+  $('sampleCount') && ($('sampleCount').textContent = String(currentBoring.samples.length));
+  $('sampleHeaderMeta').textContent = `${currentBoring.header.pointId || 'Draft'} · Hole ${currentBoring.header.holeDepth ?? '—'} ft`;
 
   $('sampleList').innerHTML = currentBoring.samples.length ? '' : '<div class="item">No samples yet.</div>';
-  $('casingList').innerHTML = (currentBoring.casing||[]).length ? '' : '<div class="item">No casing entries yet.</div>';
 
   currentBoring.samples.sort((a,b)=>a.topDepth-b.topDepth).forEach((s,idx)=>{
     const d = document.createElement('div');
     d.className = 'item';
     d.innerHTML = `
       <div class="title">${s.number} · ${s.topDepth}-${s.bottomDepth ?? '?'}</div>
-      <div>${(s.materialAndRemarks||buildDesc(s)).replace(/\n/g,' · ')}</div>
+      <div>${buildDesc(s).replace(/\n/g,' · ')}</div>
       <div class="small">${sampleSubtitle(s)}</div>
     `;
 
@@ -994,21 +996,149 @@ function renderBoringLists(){
     $('sampleList').appendChild(d);
   });
 
-  (currentBoring.casing||[]).sort((a,b)=>Number(a.depth)-Number(b.depth)).forEach(c=>{
+}
+
+
+function formattedGeneralRemarks(h){
+  const lines = String(h.generalRemarks || '')
+    .split(/\r?\n/)
+    .map(x => x.trim())
+    .filter(Boolean);
+
+  const cleaned = lines.map(line => line.replace(/^\d+\.\s*/, '').trim());
+
+  const selected = REMARK_OPTIONS.filter(opt => cleaned.includes(opt));
+  const manual = cleaned.filter(line => !REMARK_OPTIONS.includes(line));
+
+  return [...selected, ...manual].map((line, i) => `${i + 1}. ${line}`);
+}
+
+function reviewHeaderRows(h){
+  const orderedRemarks = formattedGeneralRemarks(h);
+  const rows = [
+    ['Point ID', h.pointId || '—'],
+    ['Hole Depth', h.holeDepth ?? '—'],
+    ['Inspector', h.inspector || '—'],
+    ['Driller', h.driller || '—'],
+    ['Helper', h.helper || '—'],
+    ['Rig #', h.rigNo || '—'],
+    ['Rig Type', h.rigType || '—'],
+    ['Condition', h.rigCondition || '—'],
+    ['Weather', h.weather || '—'],
+    ['GW Depth', h.gwDepth ?? '—'],
+    ['GW DateTime', h.gwDateTime ? fmtET(h.gwDateTime) : '—'],
+    ['General Remarks', orderedRemarks.length ? orderedRemarks.join('<br>') : '—']
+  ];
+  return rows;
+}
+
+function renderReviewScreen(){
+  if(!currentBoring) return;
+  $('reviewTag').textContent = currentBoring.header.pointId || 'Review';
+
+  const headerWrap = $('reviewHeader');
+  headerWrap.innerHTML = '';
+  reviewHeaderRows(currentBoring.header).forEach(([k,v])=>{
     const d = document.createElement('div');
     d.className = 'item';
-    d.innerHTML = `<div class="title">Depth ${c.depth}</div><div>${c.blows||'PUSH'}</div>`;
-    $('casingList').appendChild(d);
+    d.innerHTML = `<div class="title">${k}</div><div>${v}</div>`;
+    headerWrap.appendChild(d);
   });
+
+  const samplesWrap = $('reviewSamples');
+  samplesWrap.innerHTML = '';
+  if(!currentBoring.samples.length){
+    samplesWrap.innerHTML = '<div class="item">No samples yet.</div>';
+  } else {
+    [...currentBoring.samples].sort((a,b)=>Number(a.topDepth)-Number(b.topDepth)).forEach(s=>{
+      const d = document.createElement('div');
+      d.className = 'item';
+      d.innerHTML = `<div class="title">${s.number} · ${s.topDepth}-${s.bottomDepth ?? '?'}</div><div>${buildDesc(s).replace(/\n/g,' · ')}</div><div class="small">${sampleSubtitle(s)}</div>`;
+      samplesWrap.appendChild(d);
+    });
+  }
+
+  const casingWrap = $('reviewCasing');
+  casingWrap.innerHTML = '';
+  if(!(currentBoring.casing||[]).length){
+    casingWrap.innerHTML = '<div class="item">No casing entries yet.</div>';
+  } else {
+    (currentBoring.casing||[]).sort((a,b)=>Number(a.depth)-Number(b.depth)).forEach(c=>{
+      const d = document.createElement('div');
+      d.className = 'item';
+      d.innerHTML = `<div class="title">Depth ${c.depth}</div><div>${c.blows||'PUSH'}</div>`;
+      casingWrap.appendChild(d);
+    });
+  }
+
+  fillBoringForm();
+}
+
+async function saveAndExportCurrentBoring(){
+  if(!(await saveBoringHeader())) return;
+  renderReviewScreen();
+  const settings = await getSettings();
+  const safeName = String(currentBoring.header.pointId || 'boring').replace(/[^a-z0-9_-]+/gi,'_');
+
+  const wb = buildGintWorkbook([currentBoring], settings);
+  XLSX.writeFile(wb, `${safeName}_field_log.xlsx`);
+
+  const photos = [];
+  if(currentBoring.patchPhoto && currentBoring.patchPhoto.photoDataUrl){
+    photos.push({name: `${safeName}_PATCH_${currentBoring.patchPhoto.fileName || 'patch.jpg'}`, dataUrl: currentBoring.patchPhoto.photoDataUrl});
+  }
+  (currentBoring.samples||[]).forEach(s=>{
+    (s.photos||[]).forEach(p=>{
+      if(p.photoDataUrl){
+        photos.push({name: `${safeName}_${s.number}_${p.fileName || 'photo.jpg'}`, dataUrl: p.photoDataUrl});
+      }
+    });
+  });
+
+  if(photos.length){
+    const ensureJSZip = async()=>{
+      if(window.JSZip) return;
+      await new Promise((resolve, reject)=>{
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+        script.onload = resolve;
+        script.onerror = reject;
+        document.body.appendChild(script);
+      });
+    };
+    await ensureJSZip();
+    const zip = new JSZip();
+    photos.forEach(p=>{
+      const arr = p.dataUrl.split(',');
+      const mime = arr[0].match(/:(.*?);/)[1];
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while(n--) u8arr[n] = bstr.charCodeAt(n);
+      zip.file(p.name, new Blob([u8arr], {type:mime}));
+    });
+    const blob = await zip.generateAsync({type:'blob'});
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${safeName}_photos.zip`;
+    link.click();
+  }
+
+  showScreen('home');
+  await hydrateHome();
+  toast('Exported field log and photos');
 }
 
 function updateSaveExitState(){
   const max = maxSampleBottom(currentBoring);
   const done = currentBoring.header.holeDepth!==null && max!==null && Number(max)>=Number(currentBoring.header.holeDepth);
-  $('saveExit').classList.toggle('hidden',!done);
-  $('addSample').classList.toggle('hidden',done);
-  $('patchPhotoLabel').classList.toggle('hidden', !done);
-  $('patchPhotoPreview').classList.toggle('hidden', !done);
+  $('saveExit').classList.remove('hidden');
+  const addSampleBtn = $('addSample');
+  if(addSampleBtn) addSampleBtn.classList.toggle('hidden',done);
+  const addSampleInlineBtn = $('addSampleInline');
+  if(addSampleInlineBtn) addSampleInlineBtn.classList.toggle('hidden',done);
+  if($('patchPhotoLabel')) $('patchPhotoLabel').classList.remove('hidden');
+  if($('patchPhotoPreview')) $('patchPhotoPreview').classList.remove('hidden');
 }
 
 function availableFamilies(idx){
@@ -1034,7 +1164,7 @@ function startSample(){
     secondary1:null,
     secondary2:null,
     modifiers:[],
-    moisture:'',
+    moisture:currentBoring.samples.some(s=>s.moisture==='wet') ? 'wet' : '',
     recoveryIn:null,
     ppTsf:null,
     photos:[],
@@ -1374,12 +1504,12 @@ function renderSampleWizard(){
   const grid = document.createElement('div');
   grid.className = 'grid2';
   grid.innerHTML = `
-    ${showRecPP ? `<label>Recovery (in) <input id="recIn" type="number" step="0.5" value="${currentSample.recoveryIn ?? ''}"></label>` : `<div class="pill">GB samples do not use Recovery or PP</div>`}
-    ${showPP ? `<label>PP (tsf) <input id="ppTsf" type="number" step="0.25" value="${currentSample.ppTsf ?? ''}"></label>` : `<div class="pill">PP only for fine soils / same as above</div>`}
+    ${showRecPP ? `<label>R / PP <div class="field-inline"><input id="recIn" class="narrow-input" type="number" step="0.5" placeholder="R" value="${currentSample.recoveryIn ?? ''}">${showPP ? `<input id="ppTsf" class="narrow-input" type="number" step="0.25" placeholder="PP" value="${currentSample.ppTsf ?? ''}">` : `<span class="pill">No PP</span>`}</div></label>` : `<div class="pill">GB samples do not use Recovery or PP</div>`}
     <label id="photoLabel">${renderPhotoLabel((currentSample.photos||[]).length)}
       <input id="photoInput" type="file" accept="image/*" capture="environment" multiple>
     </label>
     ${isShelby(currentSample.number) ? '<div class="pill">Shelby writes Same as above, wet</div>' : '<div></div>'}
+    <div></div>
   `;
   body.appendChild(grid);
 
@@ -1472,6 +1602,34 @@ function maybeAutoEnd(sample){
     currentBoring.header.timeEnd = nowETInput();
   }
 }
+function getCasingCoverageMax(){ const entryMax=(casingDraftRows||[]).reduce((m,e)=>Math.max(m, Number(e.startDepth||0)+Number(e.interval||0)),0); const hole=Number(currentBoring?.header?.holeDepth||0); const sampleMax=Math.ceil(Number(maxSampleBottom(currentBoring)||0)); return Math.max(entryMax, hole, sampleMax, 0); }
+function expandCasingEntries(entries, maxDepth){
+  const rows=[];
+  const sorted=[...(entries||[])].sort((a,b)=>Number(a.startDepth)-Number(b.startDepth));
+  if(!sorted.length) return rows;
+
+  const lastEntry = sorted[sorted.length-1];
+  const lastCoveredDepth = Number(lastEntry.startDepth) + Number(lastEntry.interval);
+
+  for(let d=0; d<lastCoveredDepth; d++){
+    const match=sorted.find(e=>d>=Number(e.startDepth) && d<Number(e.startDepth)+Number(e.interval));
+    if(!match || !Number(match.totalBlows)) {
+      rows.push({depth:d, blows:'PUSH'});
+    } else {
+      const interval = Number(match.interval);
+      const total = Number(match.totalBlows);
+      const base = Math.floor(total / interval);
+      const remainder = total % interval;
+      const isLastDepthOfEntry = d === (Number(match.startDepth) + interval - 1);
+      const blows = isLastDepthOfEntry ? base + remainder : base;
+      rows.push({depth:d, blows:String(blows)});
+    }
+  }
+  return rows;
+}
+let casingEditorState = {startDepth:'', interval:5, totalBlows:''};
+function syncCasingEditorInputs(){ if($('casingStartDepth')) $('casingStartDepth').value = casingEditorState.startDepth === '' ? '' : casingEditorState.startDepth; if($('casingManual')) $('casingManual').value = casingEditorState.totalBlows === '' ? '' : casingEditorState.totalBlows; if($('casingTap')) $('casingTap').textContent = casingEditorState.totalBlows === '' ? 'PUSH' : String(casingEditorState.totalBlows); if($('casingInterval5')) $('casingInterval5').classList.toggle('selected', Number(casingEditorState.interval)===5); if($('casingInterval10')) $('casingInterval10').classList.toggle('selected', Number(casingEditorState.interval)===10); }
+function addOrUpdateCasingEntry(){ const startDepth=Number($('casingStartDepth').value); if(Number.isNaN(startDepth)){ toast('Enter a starting hammer depth', true); return; } const interval=Number(casingEditorState.interval || 5); const totalBlows=casingEditorState.totalBlows === '' ? '' : Number(casingEditorState.totalBlows); const newStart=startDepth, newEnd=startDepth+interval; const overlap=casingDraftRows.some((e, idx)=>{ if(casingEditorState.editIndex===idx) return false; const eStart=Number(e.startDepth), eEnd=eStart+Number(e.interval); return newStart < eEnd && newEnd > eStart; }); if(overlap){ toast('Casing depth range overlaps an existing entry', true); return; } const entry={startDepth, interval, totalBlows}; if(Number.isInteger(casingEditorState.editIndex)) casingDraftRows[casingEditorState.editIndex] = entry; else casingDraftRows.push(entry); casingEditorState={startDepth:'', interval:5, totalBlows:''}; renderCasingEditor(); }
 
 function hasDepthOverlap(sample){
   if(sample.topDepth === null || sample.bottomDepth === null) return false;
@@ -1538,6 +1696,7 @@ async function saveSample(){
   currentSample.materialAndRemarks = buildDesc(currentSample);
   maybeAutoGW(currentSample);
   maybeAutoEnd(currentSample);
+  if(currentSample.moisture==='wet') currentBoring.lastMoisture = 'wet';
 
   if(editingSampleIndex>-1) currentBoring.samples[editingSampleIndex] = structuredClone(currentSample);
   else currentBoring.samples.push(structuredClone(currentSample));
@@ -1548,32 +1707,21 @@ async function saveSample(){
   await hydrateHome();
   fillBoringForm();
   showScreen('boring');
-  toast(`Saved ${currentSample.number}`);
+
+  const blow2 = Number(currentSample.blows?.[1]) || 0;
+  const blow3 = Number(currentSample.blows?.[2]) || 0;
+  const shelbyNeeded = !isGB(currentSample.number) && !isShelby(currentSample.number) && currentSample.primaryFamily==='SILT/CLAY' && (blow2 + blow3) < 12;
+
+  if(shelbyNeeded) toast(`Saved ${currentSample.number} · Shelby Needed`, true);
+  else toast(`Saved ${currentSample.number}`);
 }
 
 function renderCasingEditor(){
   $('casingRows').innerHTML = '';
-  if(!casingDraftRows.length) casingDraftRows.push({depth:0,blows:''});
-  casingDraftRows.forEach((row,idx)=>{
-    const d = document.createElement('div');
-    d.className = 'casing-row';
-    d.innerHTML = `
-      <input data-k="depth" data-i="${idx}" type="number" step="1" placeholder="Depth" value="${row.depth}">
-      <input data-k="blows" data-i="${idx}" placeholder="Blows" value="${row.blows}">
-      <button data-remove="${idx}">✕</button>
-    `;
-    $('casingRows').appendChild(d);
-  });
-
-  $('casingRows').querySelectorAll('input').forEach(inp=>inp.oninput=e=>{
-    const i = Number(e.target.dataset.i), k = e.target.dataset.k;
-    casingDraftRows[i][k] = e.target.value;
-  });
-
-  $('casingRows').querySelectorAll('button[data-remove]').forEach(btn=>btn.onclick=()=>{
-    casingDraftRows.splice(Number(btn.dataset.remove),1);
-    renderCasingEditor();
-  });
+  syncCasingEditorInputs();
+  const sorted = [...casingDraftRows].sort((a,b)=>Number(a.startDepth)-Number(b.startDepth));
+  if(!sorted.length){ $('casingRows').innerHTML = '<div class="item">No casing hammer entries yet.</div>'; }
+  else { sorted.forEach((row)=>{ const idx=casingDraftRows.findIndex((e,i)=>Number(e.startDepth)===Number(row.startDepth) && Number(e.interval)===Number(row.interval) && String(e.totalBlows)===String(row.totalBlows)); const perFt=row.totalBlows === '' ? 'PUSH' : (Number(row.totalBlows)/Number(row.interval)); const d=document.createElement('div'); d.className='item casing-entry'; d.innerHTML=`<div><div class="title">${row.startDepth}-${Number(row.startDepth)+Number(row.interval)-1} ft</div><div>Total ${row.totalBlows === '' ? 'PUSH' : row.totalBlows} · Per ft ${perFt}</div></div>`; const actions=document.createElement('div'); actions.className='compact-actions'; const edit=document.createElement('button'); edit.textContent='Edit'; edit.onclick=()=>{ casingEditorState={startDepth:row.startDepth, interval:row.interval, totalBlows:row.totalBlows, editIndex:idx}; syncCasingEditorInputs(); }; const del=document.createElement('button'); del.textContent='Delete'; del.onclick=()=>{ casingDraftRows.splice(idx,1); if(casingEditorState.editIndex===idx) casingEditorState={startDepth:'', interval:5, totalBlows:''}; renderCasingEditor(); }; actions.append(edit,del); d.appendChild(actions); $('casingRows').appendChild(d); }); }
 }
 
 function buildGintWorkbook(borings,settings){
@@ -1639,7 +1787,7 @@ function buildGintWorkbook(borings,settings){
         blows[1] || '',
         blows[2] || '',
         blows[3] || '',
-        s.materialAndRemarks || buildDesc(s)
+        materialAndRemarksForExport(s)
       ]);
     });
   });
@@ -1673,7 +1821,6 @@ async function ensureJSZip(){
   });
 }
 
-$('newBoring').onclick = newBoring;
 $('openSettings').onclick = async()=>{ await hydrateHome(); showScreen('settings'); };
 $('homeFromSettings').onclick = ()=>showScreen('home');
 $('saveDefaults').onclick = saveDefaults;
@@ -1695,37 +1842,58 @@ $('homeFromBoring').onclick = async()=>{
   showScreen('home');
 };
 
-$('saveBoring').onclick = saveBoringHeader;
-$('addSample').onclick = async()=>{ if(await saveBoringHeader()) startSample(); };
+$('saveBoring').onclick = ()=>{
+  const card = $('boringHeaderCard');
+  const btn = $('saveBoring');
+  const hidden = card.classList.toggle('hidden');
+  btn.textContent = hidden ? 'Edit Header' : 'Hide Header';
+};
+const _addSample = $('addSample'); if(_addSample){ _addSample.onclick = async()=>{ if(await saveBoringHeader()) startSample(); }; }
+const _addSampleInline = $('addSampleInline'); if(_addSampleInline){ _addSampleInline.onclick = async()=>{ if(await saveBoringHeader()) startSample(); }; }
+const _newBoringFromSettings = $('newBoringFromSettings'); if(_newBoringFromSettings){ _newBoringFromSettings.onclick = async()=>{ await saveDefaults(); await newBoring(); showScreen('boring'); }; }
 $('addShelby').onclick = async()=>{ if(await saveBoringHeader()) startShelby(); };
-$('saveExit').onclick = async()=>{ if(await saveBoringHeader()) showScreen('home'); };
+$('saveExit').onclick = async()=>{ if(await saveBoringHeader()){ renderReviewScreen(); showScreen('review'); } };
 
 $('editCasing').onclick = async()=>{
   if(await saveBoringHeader()){
-    casingDraftRows = structuredClone(currentBoring.casing||[]);
+    casingDraftRows = structuredClone(currentBoring.casingEntries||[]);
+    casingEditorState = {startDepth:'', interval:5, totalBlows:''};
     renderCasingEditor();
     showScreen('casing');
   }
 };
-
-$('addCasingRow').onclick = ()=>{
-  casingDraftRows.push({depth:nextCasingDepth(), blows:''});
-  renderCasingEditor();
+$('casingInterval5').onclick = ()=>{
+  casingEditorState.startDepth = $('casingStartDepth').value;
+  casingEditorState.interval = 5;
+  syncCasingEditorInputs();
 };
-
+$('casingInterval10').onclick = ()=>{
+  casingEditorState.startDepth = $('casingStartDepth').value;
+  casingEditorState.interval = 10;
+  syncCasingEditorInputs();
+};
+$('casingTap').onclick = ()=>{
+  casingEditorState.startDepth = $('casingStartDepth').value;
+  if(casingEditorState.totalBlows === '' || casingEditorState.totalBlows === null || casingEditorState.totalBlows === undefined) casingEditorState.totalBlows = 1;
+  else casingEditorState.totalBlows = Number(casingEditorState.totalBlows) + 1;
+  syncCasingEditorInputs();
+};
+$('casingManual').oninput = e=>{
+  casingEditorState.startDepth = $('casingStartDepth').value;
+  const raw=e.target.value.replace(/[^\d]/g,'');
+  casingEditorState.totalBlows = raw === '' ? '' : Number(raw);
+  syncCasingEditorInputs();
+};
+$('casingStartDepth').oninput = e=>{
+  casingEditorState.startDepth = e.target.value;
+};
+$('addCasingEntry').onclick = addOrUpdateCasingEntry;
 $('backFromCasing').onclick = ()=>showScreen('boring');
+$('backFromReview').onclick = ()=>showScreen('boring');
+$('saveExportReview').onclick = saveAndExportCurrentBoring;
+$('saveCasing').onclick = async()=>{ const maxDepth=getCasingCoverageMax(); currentBoring.casingEntries = structuredClone(casingDraftRows); currentBoring.casing = expandCasingEntries(casingDraftRows, maxDepth); await DB.put('borings',currentBoring.id,currentBoring); renderBoringLists(); await hydrateHome(); showScreen('boring'); toast('Casing saved'); };
 
-$('saveCasing').onclick = async()=>{
-  currentBoring.casing = casingDraftRows
-    .filter(r=>String(r.depth).trim()!=='' || String(r.blows).trim()!=='')
-    .map(r=>({depth:Number(r.depth), blows:String(r.blows).trim() || 'PUSH'}));
-  await DB.put('borings',currentBoring.id,currentBoring);
-  renderBoringLists();
-  await hydrateHome();
-  showScreen('boring');
-  toast('Casing saved');
-};
-
+$('cancelSample').onclick = ()=>showScreen('boring');
 $('prevStep').onclick = ()=>{
   const first = isGB(currentSample.number) ? 1 : (isShelby(currentSample.number) ? finishStepIndex() : 0);
   sampleStep = Math.max(first, sampleStep-1);
@@ -1771,7 +1939,8 @@ $('finishNow').onclick = ()=>{
 
 $('saveSample').onclick = saveSample;
 
-$('exportGint').onclick = async()=>{
+/* removed home export shortcut */
+$('exportGint') && ($('exportGint').onclick = async()=>{
   const borings = await DB.all('borings');
   if(!borings.length) return toast('No borings to export',true);
   const settings = await getSettings();
@@ -1782,9 +1951,9 @@ $('exportGint').onclick = async()=>{
   }
   const filename = `${date}_field_logs${initials ? '_' + initials : ''}.xlsx`;
   XLSX.writeFile(buildGintWorkbook(borings,settings), filename);
-};
+});
 
-$('exportPhotos').onclick = async()=>{
+$('exportPhotos') && ($('exportPhotos').onclick = async()=>{
   const borings = await DB.all('borings');
   if(!borings.length) return toast('No borings to export',true);
   const photos = [];
@@ -1825,7 +1994,7 @@ $('exportPhotos').onclick = async()=>{
   link.download = `GeoLog_Photos_${new Date().toISOString().slice(0,10)}.zip`;
   link.click();
   toast('ZIP ready for download');
-};
+});
 
 (async function(){
   await DB.put('settings','defaults', await getSettings());
