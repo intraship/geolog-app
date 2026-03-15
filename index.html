@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>GeoLogger v0.90</title>
+  <title>GeoLogger v0.91</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     :root{
@@ -144,7 +144,7 @@
     </div>
   </header>
 
-  <div class="version">VERSION: v0.90 · Field/Office Tool</div>
+  <div class="version">VERSION: v0.91 · Field/Office Tool</div>
 
   <main class="main">
     <section id="home" class="screen active">
@@ -335,7 +335,7 @@
   <div id="toast" class="toast"></div>
 
   <script>
-const APP_VERSION = 'v0.90';
+const APP_VERSION = 'v0.91';
 const DEFAULTS = {
   project:'NJ Turnpike 1 to 4 Capacity Enhancements Program',
   contractNo:'OPS No. T3839',
@@ -771,7 +771,65 @@ async function hydrateHome(){
     const row = document.createElement('div');
     row.className = 'compact-actions';
     const open = document.createElement('button'); open.textContent='Open'; open.onclick=()=>openBoring(b.id || b.header.pointId);
-    const exp = document.createElement('button'); exp.textContent='Export'; exp.onclick=async()=>{ const wb = buildGintWorkbook([b], await getSettings()); XLSX.writeFile(wb, `${String(b.header.pointId).replace(/[^a-z0-9_-]+/gi,'_')}.xlsx`); };
+    const exp = document.createElement('button'); exp.textContent='Export'; exp.onclick=async()=>{
+      const settings = await getSettings();
+      const safeName = String(b.header.pointId || 'boring').replace(/[^a-z0-9_-]+/gi,'_');
+
+      const ensureJSZip = async()=>{
+        if(window.JSZip) return;
+        await new Promise((resolve, reject)=>{
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+          script.onload = resolve;
+          script.onerror = reject;
+          document.body.appendChild(script);
+        });
+      };
+      await ensureJSZip();
+
+      const zip = new JSZip();
+      const folder = zip.folder(safeName);
+
+      const wb = buildGintWorkbook([b], settings);
+      const wbArray = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+      folder.file(`${safeName}_field_log.xlsx`, wbArray);
+
+      if(b.patchPhoto && b.patchPhoto.photoDataUrl){
+        const arr = b.patchPhoto.photoDataUrl.split(',');
+        const mime = arr[0].match(/:(.*?);/)[1];
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while(n--) u8arr[n] = bstr.charCodeAt(n);
+        const ext = (mime.split('/')[1] || 'jpg').replace('jpeg','jpg');
+        folder.file(`PATCH.${ext}`, u8arr, {binary:true});
+      }
+
+      (b.samples||[]).forEach(s=>{
+        (s.photos||[]).forEach((p, idx)=>{
+          if(!p.photoDataUrl) return;
+          const arr = p.photoDataUrl.split(',');
+          const mime = arr[0].match(/:(.*?);/)[1];
+          const bstr = atob(arr[1]);
+          let n = bstr.length;
+          const u8arr = new Uint8Array(n);
+          while(n--) u8arr[n] = bstr.charCodeAt(n);
+          const ext = (mime.split('/')[1] || 'jpg').replace('jpeg','jpg');
+          folder.file(`${s.number}_${idx+1}.${ext}`, u8arr, {binary:true});
+        });
+      });
+
+      const blob = await zip.generateAsync({type:'blob'});
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `${safeName}_export.zip`;
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(()=>{
+        URL.revokeObjectURL(link.href);
+        link.remove();
+      }, 1500);
+    };
     const del = document.createElement('button'); del.textContent='Delete'; del.onclick=async()=>{ if(!confirm('Delete this boring?')) return; const db = await DB.open(); const tx = db.transaction('borings','readwrite'); tx.objectStore('borings').delete(b.id || b.header.pointId); tx.oncomplete=async()=>{ await hydrateHome(); toast('Boring deleted'); }; };
     row.append(open, exp, del); div.appendChild(row); $('boringList').appendChild(div);
   });
@@ -1080,53 +1138,64 @@ async function saveAndExportCurrentBoring(){
   const settings = await getSettings();
   const safeName = String(currentBoring.header.pointId || 'boring').replace(/[^a-z0-9_-]+/gi,'_');
 
-  const wb = buildGintWorkbook([currentBoring], settings);
-  XLSX.writeFile(wb, `${safeName}_field_log.xlsx`);
-
-  const photos = [];
-  if(currentBoring.patchPhoto && currentBoring.patchPhoto.photoDataUrl){
-    photos.push({name: `${safeName}_PATCH_${currentBoring.patchPhoto.fileName || 'patch.jpg'}`, dataUrl: currentBoring.patchPhoto.photoDataUrl});
-  }
-  (currentBoring.samples||[]).forEach(s=>{
-    (s.photos||[]).forEach(p=>{
-      if(p.photoDataUrl){
-        photos.push({name: `${safeName}_${s.number}_${p.fileName || 'photo.jpg'}`, dataUrl: p.photoDataUrl});
-      }
+  const ensureJSZip = async()=>{
+    if(window.JSZip) return;
+    await new Promise((resolve, reject)=>{
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+      script.onload = resolve;
+      script.onerror = reject;
+      document.body.appendChild(script);
     });
-  });
+  };
+  await ensureJSZip();
 
-  if(photos.length){
-    const ensureJSZip = async()=>{
-      if(window.JSZip) return;
-      await new Promise((resolve, reject)=>{
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
-        script.onload = resolve;
-        script.onerror = reject;
-        document.body.appendChild(script);
-      });
-    };
-    await ensureJSZip();
-    const zip = new JSZip();
-    photos.forEach(p=>{
-      const arr = p.dataUrl.split(',');
+  const zip = new JSZip();
+  const folder = zip.folder(safeName);
+
+  const wb = buildGintWorkbook([currentBoring], settings);
+  const wbArray = XLSX.write(wb, {bookType:'xlsx', type:'array'});
+  folder.file(`${safeName}_field_log.xlsx`, wbArray);
+
+  if(currentBoring.patchPhoto && currentBoring.patchPhoto.photoDataUrl){
+    const arr = currentBoring.patchPhoto.photoDataUrl.split(',');
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while(n--) u8arr[n] = bstr.charCodeAt(n);
+    const ext = (mime.split('/')[1] || 'jpg').replace('jpeg','jpg');
+    folder.file(`PATCH.${ext}`, u8arr, {binary:true});
+  }
+
+  (currentBoring.samples||[]).forEach(s=>{
+    (s.photos||[]).forEach((p, idx)=>{
+      if(!p.photoDataUrl) return;
+      const arr = p.photoDataUrl.split(',');
       const mime = arr[0].match(/:(.*?);/)[1];
       const bstr = atob(arr[1]);
       let n = bstr.length;
       const u8arr = new Uint8Array(n);
       while(n--) u8arr[n] = bstr.charCodeAt(n);
-      zip.file(p.name, new Blob([u8arr], {type:mime}));
+      const ext = (mime.split('/')[1] || 'jpg').replace('jpeg','jpg');
+      folder.file(`${s.number}_${idx+1}.${ext}`, u8arr, {binary:true});
     });
-    const blob = await zip.generateAsync({type:'blob'});
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `${safeName}_photos.zip`;
-    link.click();
-  }
+  });
+
+  const blob = await zip.generateAsync({type:'blob'});
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `${safeName}_export.zip`;
+  document.body.appendChild(link);
+  link.click();
+  setTimeout(()=>{
+    URL.revokeObjectURL(link.href);
+    link.remove();
+  }, 1500);
 
   showScreen('home');
   await hydrateHome();
-  toast('Exported field log and photos');
+  toast('Exported ZIP with field log and photos');
 }
 
 function updateSaveExitState(){
