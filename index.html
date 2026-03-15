@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -238,8 +239,9 @@
         <button id="homeFromBoring">Home</button>
         <button id="saveBoring" class="primary">Edit Header</button>
         <button id="editCasing">Edit Casing</button>
+        <button id="addSampleBottom" class="primary">Add Sample</button>
         <button id="addShelby">Add Shelby</button>
-        <button id="saveExit" class="primary">Patch Photo &amp; Review</button>
+        <button id="saveExit" class="primary">Review</button>
       </div>
     </section>
 
@@ -1025,10 +1027,14 @@ function renderBoringLists(){
   currentBoring.samples.sort((a,b)=>a.topDepth-b.topDepth).forEach((s,idx)=>{
     const d = document.createElement('div');
     d.className = 'item';
+    const previewHtml = (s.photos && s.photos.length && s.photos[0].photoDataUrl)
+      ? `<div class="small" style="margin-top:8px"><img src="${s.photos[0].photoDataUrl}" class="sample-list-preview" data-fullsrc="${s.photos[0].photoDataUrl}" style="max-width:100px;max-height:80px;border-radius:8px;cursor:pointer;border:1px solid var(--line)" alt="Sample preview"></div>`
+      : '';
     d.innerHTML = `
       <div class="title">${s.number} · ${s.topDepth}-${s.bottomDepth ?? '?'}</div>
       <div>${buildDesc(s).replace(/\n/g,' · ')}</div>
       <div class="small">${sampleSubtitle(s)}</div>
+      ${previewHtml}
     `;
 
     const row = document.createElement('div');
@@ -1051,6 +1057,22 @@ function renderBoringLists(){
     row.append(edit,del);
     d.appendChild(row);
     $('sampleList').appendChild(d);
+  });
+
+  $('sampleList').querySelectorAll('.sample-list-preview').forEach(img=>{
+    img.onclick = ()=>{
+      const src = img.getAttribute('data-fullsrc');
+      const modal = document.createElement('div');
+      modal.className = 'photo-enlarge-modal';
+      modal.innerHTML = `<img src="${src}" alt="Sample Photo">`;
+      const closeBtn = document.createElement('button');
+      closeBtn.className = 'photo-enlarge-close';
+      closeBtn.innerHTML = '×';
+      closeBtn.onclick = () => document.body.removeChild(modal);
+      modal.appendChild(closeBtn);
+      modal.onclick = e => { if(e.target === modal) document.body.removeChild(modal); };
+      document.body.appendChild(modal);
+    };
   });
 
 }
@@ -1110,8 +1132,32 @@ function renderReviewScreen(){
     [...currentBoring.samples].sort((a,b)=>Number(a.topDepth)-Number(b.topDepth)).forEach(s=>{
       const d = document.createElement('div');
       d.className = 'item';
-      d.innerHTML = `<div class="title">${s.number} · ${s.topDepth}-${s.bottomDepth ?? '?'}</div><div>${buildDesc(s).replace(/\n/g,' · ')}</div><div class="small">${sampleSubtitle(s)}</div>`;
+      const photo = (s.photos && s.photos.length && s.photos[0].photoDataUrl)
+        ? `<div style="margin-top:8px"><img src="${s.photos[0].photoDataUrl}" class="review-sample-photo" data-fullsrc="${s.photos[0].photoDataUrl}" style="max-width:120px;border-radius:8px;border:1px solid var(--line);cursor:pointer" alt="Sample photo preview"></div>`
+        : '';
+      d.innerHTML = `
+        <div class="title">${s.number} · ${s.topDepth}-${s.bottomDepth ?? '?'}</div>
+        <div>${buildDesc(s).replace(/\n/g,' · ')}</div>
+        <div class="small">${sampleSubtitle(s)}</div>
+        ${photo}
+      `;
       samplesWrap.appendChild(d);
+    });
+
+    samplesWrap.querySelectorAll('.review-sample-photo').forEach(img=>{
+      img.onclick = ()=>{
+        const src = img.getAttribute('data-fullsrc');
+        const modal = document.createElement('div');
+        modal.className = 'photo-enlarge-modal';
+        modal.innerHTML = `<img src="${src}" alt="Sample Photo">`;
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'photo-enlarge-close';
+        closeBtn.innerHTML = '×';
+        closeBtn.onclick = () => document.body.removeChild(modal);
+        modal.appendChild(closeBtn);
+        modal.onclick = e => { if(e.target === modal) document.body.removeChild(modal); };
+        document.body.appendChild(modal);
+      };
     });
   }
 
@@ -1918,6 +1964,7 @@ $('saveBoring').onclick = ()=>{
 };
 const _addSample = $('addSample'); if(_addSample){ _addSample.onclick = async()=>{ if(await saveBoringHeader()) startSample(); }; }
 const _addSampleInline = $('addSampleInline'); if(_addSampleInline){ _addSampleInline.onclick = async()=>{ if(await saveBoringHeader()) startSample(); }; }
+const _addSampleBottom = $('addSampleBottom'); if(_addSampleBottom){ _addSampleBottom.onclick = async()=>{ if(await saveBoringHeader()) startSample(); }; }
 const _newBoringFromSettings = $('newBoringFromSettings'); if(_newBoringFromSettings){ _newBoringFromSettings.onclick = async()=>{ await saveDefaults(); await newBoring(); showScreen('boring'); }; }
 $('addShelby').onclick = async()=>{ if(await saveBoringHeader()) startShelby(); };
 $('saveExit').onclick = async()=>{ if(await saveBoringHeader()){ renderReviewScreen(); showScreen('review'); } };
