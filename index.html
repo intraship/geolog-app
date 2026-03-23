@@ -1843,34 +1843,41 @@ async function downloadBlob(blob, filename){
     nav.msSaveOrOpenBlob(blob, filename);
     return;
   }
-  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent || '');
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent || '') || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  if(isSafari || isIOS){
-    const reader = new FileReader();
-    const dataUrl = await new Promise((resolve, reject)=>{
-      reader.onloadend = ()=>resolve(reader.result);
-      reader.onerror = ()=>reject(new Error('FileReader failed'));
-      reader.readAsDataURL(blob);
-    });
-    const a = document.createElement('a');
-    a.href = dataUrl;
-    a.download = filename;
-    a.target = '_blank';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(()=>a.remove(), 1000);
-    return;
+  const ua = navigator.userAgent || '';
+  const isSafari = /^((?!chrome|android).)*safari/i.test(ua);
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+  // Large DOCX exports were failing in Safari because converting the blob to a
+  // massive data: URL can trigger a navigation/refresh or exhaust memory.
+  // Keep the original blob and hand it to Safari in a way it can actually open/share.
+  if((isSafari || isIOS) && typeof File !== 'undefined'){
+    const mime = blob.type || 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    const file = new File([blob], filename, { type: mime });
+
+    if(nav.share && (!nav.canShare || nav.canShare({ files:[file] }))){
+      try {
+        setExportProgress(99, 'Opening share/download sheet…');
+        await nav.share({ files:[file], title: filename });
+        return;
+      } catch(err){
+        if(err && err.name === 'AbortError') throw err;
+        console.warn('navigator.share failed, falling back to blob URL', err);
+      }
+    }
   }
+
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
+  if(isSafari || isIOS) a.target = '_blank';
+  a.rel = 'noopener';
   document.body.appendChild(a);
   a.click();
   setTimeout(()=>{
     URL.revokeObjectURL(url);
     a.remove();
-  }, 1000);
+  }, (isSafari || isIOS) ? 60000 : 1000);
 }
 function photoCaptionForExport(b, s){
   const numLabel = formatSampleNumber(s.number || '');
