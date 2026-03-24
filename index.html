@@ -5,7 +5,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>GeoLogger v0.93</title>
+  <title>GeoLogger v0.94</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     :root{
@@ -145,7 +145,7 @@
     </div>
   </header>
 
-  <div class="version">VERSION: v0.93 · Field/Office Tool</div>
+  <div class="version">VERSION: v0.94 · Field/Office Tool</div>
 
   <main class="main">
     <section id="home" class="screen active">
@@ -1859,6 +1859,7 @@ async function downloadBlob(blob, filename){
     if(nav.share && (!nav.canShare || nav.canShare({ files:[file] }))){
       setExportProgress(99, 'Opening share sheet…');
       await nav.share({ files:[file], title: filename });
+      hideExportProgress();
       return;
     }
     throw new Error('Safari could not open the share sheet for this file. Try again from the export button, or reduce the export size.');
@@ -1988,14 +1989,23 @@ async function normalizeImageForDocx(dataUrl, displayWidthPx=720){
       try{
         const sourceWidth = Math.max(1, img.naturalWidth || img.width || 1);
         const sourceHeight = Math.max(1, img.naturalHeight || img.height || 1);
+
+        // Keep images sharp in Word while avoiding massive DOCX sizes that can crash Safari.
+        // 1600 px wide is plenty for a 3.5-3.6 in image and stays crisp when printed.
+        const maxEmbedWidth = 1600;
+        const targetWidth = Math.min(sourceWidth, maxEmbedWidth);
+        const targetHeight = Math.max(1, Math.round(sourceHeight * (targetWidth / sourceWidth)));
+
         const canvas = document.createElement('canvas');
-        canvas.width = sourceWidth;
-        canvas.height = sourceHeight;
-        const ctx = canvas.getContext('2d');
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        const ctx = canvas.getContext('2d', { alpha:false });
         ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0,0,sourceWidth,sourceHeight);
-        ctx.drawImage(img, 0, 0, sourceWidth, sourceHeight);
-        const outDataUrl = canvas.toDataURL('image/png');
+        ctx.fillRect(0,0,targetWidth,targetHeight);
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+        // JPEG keeps file size far lower than PNG while preserving photo quality.
+        const outDataUrl = canvas.toDataURL('image/jpeg', 0.92);
         const width = Math.min(displayWidthPx, sourceWidth);
         const scale = width / sourceWidth;
         const height = Math.max(1, Math.round(sourceHeight * scale));
@@ -2137,9 +2147,9 @@ async function exportPhotoLogDocForBorings(borings, settings, filenameBase){
     const blob = await docx.Packer.toBlob(doc);
     setExportProgress(98, `Starting download… (${Math.max(1, Math.round(blob.size/1024/1024))} MB)`);
     await downloadBlob(blob, `${safeFileName(filenameBase)}_photo_log.docx`);
-    setExportProgress(100, 'Download started');
-    setTimeout(hideExportProgress, 1200);
-    toast('Photo log exported');
+    setExportProgress(100, 'Share sheet opened');
+    setTimeout(hideExportProgress, 400);
+    toast('Photo log ready');
   } catch(err){
     hideExportProgress();
     console.error(err);
@@ -2161,8 +2171,10 @@ function ensureHomeExportButtons(){
     let initials = '';
     if(settings.inspector) initials = settings.inspector.split(' ').map(w=>w[0]).join('').toUpperCase();
     const filename = `${date}_field_logs${initials ? '_' + initials : ''}.xlsx`;
+    setExportProgress(10, 'Preparing field log…', 'Preparing field log…');
     await exportWorkbookFile(buildGintWorkbook(borings, settings), filename);
-    toast('Field logs exported');
+    hideExportProgress();
+    toast('Field logs ready');
   };
   document.getElementById('exportAllPhotoLogs').onclick = async()=>{
     const borings = await DB.all('borings');
