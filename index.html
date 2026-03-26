@@ -1497,6 +1497,8 @@ function renderPhotoLabel(count, loading=false){
   return loading ? 'Loading' : `${count} Photos added`;
 }
 
+// Sample / Shelby screen
+// This screen collects one sample at a time, including notes, PP, recovery, and photos.
 function renderSampleWizard(){
   $('sNumber').value = currentSample.number || '';
   $('sTop').value = currentSample.topDepth ?? '';
@@ -2102,6 +2104,9 @@ function buildGintWorkbook(borings,settings){
 }
 
 
+// Export helpers
+// These functions prepare XLSX and DOCX files and try to use the iPhone share sheet
+// on Safari so users can save to Files / OneDrive more reliably.
 function safeFileName(name){
   return String(name || 'file').replace(/[^a-z0-9._-]+/gi,'_');
 }
@@ -2122,6 +2127,7 @@ async function downloadBlob(blob, filename){
   // Safari/iOS should use the share sheet for large exports. Falling back to
   // anchor/data navigation can refresh the page or silently fail on large files.
   if((isSafari || isIOS) && typeof File !== 'undefined'){
+    // iPhone/iPad path: prefer the native share sheet instead of a direct download.
     const mime = blob.type || 'application/octet-stream';
     const file = new File([blob], filename, { type: mime });
     if(nav.share && (!nav.canShare || nav.canShare({ files:[file] }))){
@@ -2130,7 +2136,14 @@ async function downloadBlob(blob, filename){
       hideExportProgress();
       return;
     }
-    throw new Error('Safari could not open the share sheet for this file. Try again from the export button, or reduce the export size.');
+    const url = URL.createObjectURL(blob);
+    try{
+      window.open(url, '_blank');
+      setTimeout(()=>URL.revokeObjectURL(url), 60000);
+      hideExportProgress();
+      return;
+    }catch(_e){}
+    throw new Error('Safari could not open the share sheet for this file. Try again from the export button, then choose Save to Files or OneDrive.');
   }
 
   const url = URL.createObjectURL(blob);
@@ -2665,14 +2678,23 @@ $('exportPhotos') && ($('exportPhotos').onclick = async()=>{
 .gl-photo-card{border:1px solid var(--line);border-radius:10px;padding:8px;background:#1a1714;display:flex;flex-direction:column;gap:8px;max-width:140px}
 .gl-photo-actions{display:flex;gap:6px;flex-wrap:wrap}
 .gl-photo-actions button{font-size:12px;padding:6px 8px}
-.gl-crop-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px}
-.gl-crop-panel{background:#161310;color:#f0ede6;width:min(1100px,96vw);height:min(92vh,860px);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:0 20px 80px rgba(0,0,0,.35);border:1px solid #5c4326}
+./* Crop modal: optimized for iPhone and desktop.
+   The panel scrolls if space gets tight so action buttons stay reachable. */
+gl-crop-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:99999;display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box}
+.gl-crop-panel{background:#161310;color:#f0ede6;width:min(980px,96vw);max-height:min(94vh,900px);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:0 20px 80px rgba(0,0,0,.35);border:1px solid #5c4326;overflow:auto;-webkit-overflow-scrolling:touch}
 .gl-crop-topbar,.gl-crop-bottombar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .gl-crop-topbar button,.gl-crop-bottombar button{padding:8px 10px}
 .gl-crop-stage{position:relative;flex:1;min-height:320px;background:#221c16;border:1px solid #6a4a26;border-radius:12px;overflow:hidden;touch-action:none}
 .gl-crop-stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .gl-crop-help{font-size:12px;color:#d0b18b}
 .gl-crop-grow{flex:1}
+@media (max-width:640px){
+  .gl-crop-overlay{align-items:stretch;padding:8px}
+  .gl-crop-panel{width:100%;max-height:none;height:auto;border-radius:14px;padding:12px calc(12px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left))}
+  .gl-crop-stage{min-height:360px}
+  .gl-crop-topbar,.gl-crop-bottombar{gap:6px}
+  .gl-crop-topbar button,.gl-crop-bottombar button{flex:1 1 auto}
+}
 
     .help-card{background:#211c16;border:1px solid #5c4326;box-shadow:0 10px 24px rgba(0,0,0,.18)}
     .help-card h4{margin:0 0 8px;font-size:15px}
@@ -2693,101 +2715,219 @@ $('exportPhotos') && ($('exportPhotos').onclick = async()=>{
 
   </style>
 <script>
+// Photo cropper
+// - Pinch with two fingers to zoom on touch screens.
+// - Drag with one finger / mouse to draw the crop box.
+// - Rotate if the photo needs to be straightened.
+// - Export keeps a higher-resolution crop so Word photo logs stay sharp.
 function openPreciseCropper(opts){
-  const overlay = document.createElement('div'); overlay.className = 'gl-crop-overlay';
+  const overlay = document.createElement('div');
+  overlay.className = 'gl-crop-overlay';
   overlay.innerHTML = `
     <div class="gl-crop-panel">
       <div><strong>${opts.title || 'Crop Photo'}</strong></div>
-      <div class="gl-crop-help">Move Image lets you drag the photo. Zoom and rotate line it up. Draw Crop lets you drag the exact cut area.</div>
+      <div class="gl-crop-help">Use two fingers to zoom in or out. Drag one finger to draw the crop box. Rotate if the photo needs to be straightened.</div>
       <div class="gl-crop-topbar">
-        <button type="button" data-mode="move">Move Image</button>
-        <button type="button" data-mode="crop">Draw Crop</button>
-        <button type="button" data-zoom="out">Zoom −</button>
-        <input type="range" min="10" max="500" value="100" data-role="zoomRange">
-        <button type="button" data-zoom="in">Zoom +</button>
-        <span data-role="zoomLabel">100%</span>
         <button type="button" data-rotate="left">⟲ 90°</button>
         <button type="button" data-rotate="right">⟳ 90°</button>
         <input type="range" min="-180" max="180" value="0" data-role="angleRange">
         <span data-role="angleLabel">0°</span>
+        <button type="button" data-reset>Reset</button>
       </div>
       <div class="gl-crop-stage"><canvas></canvas></div>
       <div class="gl-crop-bottombar">
-        <button type="button" data-reset>Reset</button>
+        <div class="gl-crop-help" style="flex:1 1 240px">Tip: pinch to zoom, then drag a box around the part you want to keep.</div>
         <div class="gl-crop-grow"></div>
         <button type="button" data-cancel>Cancel</button>
-        <button type="button" data-apply>Apply Crop</button>
+        <button type="button" class="primary" data-apply>Apply Crop</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
-  const canvas=overlay.querySelector('canvas'), ctx=canvas.getContext('2d');
-  const stage=overlay.querySelector('.gl-crop-stage');
-  const zoomRange=overlay.querySelector('[data-role="zoomRange"]');
-  const zoomLabel=overlay.querySelector('[data-role="zoomLabel"]');
-  const angleRange=overlay.querySelector('[data-role="angleRange"]');
-  const angleLabel=overlay.querySelector('[data-role="angleLabel"]');
-  const dpr=Math.max(1, window.devicePixelRatio || 1);
-  let mode='move', zoom=1, rotation=0, offsetX=0, offsetY=0, drag=false, drawCrop=false, start=null, cropRect=null;
+
+  const canvas = overlay.querySelector('canvas');
+  const ctx = canvas.getContext('2d', { alpha:false });
+  const stage = overlay.querySelector('.gl-crop-stage');
+  const angleRange = overlay.querySelector('[data-role="angleRange"]');
+  const angleLabel = overlay.querySelector('[data-role="angleLabel"]');
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+
+  let zoom = 1;
+  let rotation = 0;
+  let cropRect = null;
+  let drawStart = null;
+  const pointers = new Map();
+  let pinchStartDist = 0;
+  let pinchStartZoom = 1;
+
   const img = new Image();
-  img.onload=()=>{ size(); render(); };
+  img.onload = ()=>{ size(); render(); };
   img.src = opts.src;
-  function size(){ const r=stage.getBoundingClientRect(); canvas.width=Math.max(200, Math.round(r.width*dpr)); canvas.height=Math.max(200, Math.round(r.height*dpr)); }
-  function point(e){ const r=canvas.getBoundingClientRect(); return {x:(e.clientX-r.left)*dpr, y:(e.clientY-r.top)*dpr}; }
-  function render(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.save(); ctx.translate(canvas.width/2 + offsetX*dpr, canvas.height/2 + offsetY*dpr); ctx.rotate(rotation*Math.PI/180);
-    const base = Math.min(canvas.width / img.width, canvas.height / img.height);
-    const scale = base*zoom; const w=img.width*scale, h=img.height*scale;
-    ctx.drawImage(img, -w/2, -h/2, w, h); ctx.restore();
-    if(cropRect){ ctx.save(); ctx.strokeStyle='#2563eb'; ctx.lineWidth=2*dpr; ctx.setLineDash([8*dpr,6*dpr]); ctx.strokeRect(cropRect.x,cropRect.y,cropRect.w,cropRect.h); ctx.restore(); }
-    zoomLabel.textContent=Math.round(zoom*100)+'%'; angleLabel.textContent=Math.round(rotation)+'°';
+
+  function size(){
+    const r = stage.getBoundingClientRect();
+    canvas.width = Math.max(200, Math.round(r.width * dpr));
+    canvas.height = Math.max(200, Math.round(r.height * dpr));
   }
-  canvas.onwheel=(e)=>{ e.preventDefault(); zoom=Math.max(.1, Math.min(5, zoom*(e.deltaY<0?1.05:.95))); zoomRange.value=Math.round(zoom*100); render(); };
-  canvas.onpointerdown=(e)=>{ canvas.setPointerCapture(e.pointerId); drag=true; start=point(e); if(mode==='crop'){ cropRect={x:start.x,y:start.y,w:1,h:1}; drawCrop=true; } };
-  canvas.onpointermove=(e)=>{ if(!drag) return; const p=point(e); if(mode==='move'){ offsetX += (p.x-start.x)/dpr; offsetY += (p.y-start.y)/dpr; start=p; } else if(drawCrop){ cropRect={ x:Math.min(start.x,p.x), y:Math.min(start.y,p.y), w:Math.abs(p.x-start.x), h:Math.abs(p.y-start.y)}; } render(); };
-  const endDrag=()=>{ drag=false; drawCrop=false; };
-  canvas.onpointerup=endDrag; canvas.onpointercancel=endDrag;
-  overlay.querySelector('[data-mode="move"]').onclick=()=>{ mode='move'; };
-  overlay.querySelector('[data-mode="crop"]').onclick=()=>{ mode='crop'; };
-  overlay.querySelector('[data-zoom="in"]').onclick=()=>{ zoom=Math.min(5,zoom+0.1); zoomRange.value=Math.round(zoom*100); render(); };
-  overlay.querySelector('[data-zoom="out"]').onclick=()=>{ zoom=Math.max(.1,zoom-0.1); zoomRange.value=Math.round(zoom*100); render(); };
-  zoomRange.oninput=()=>{ zoom=Number(zoomRange.value)/100; render(); };
-  overlay.querySelector('[data-rotate="left"]').onclick=()=>{ rotation = Math.max(-180, rotation - 90); angleRange.value = Math.round(rotation); render(); };
-  overlay.querySelector('[data-rotate="right"]').onclick=()=>{ rotation = Math.min(180, rotation + 90); angleRange.value = Math.round(rotation); render(); };
-  angleRange.oninput=()=>{ rotation=Number(angleRange.value); render(); };
-  overlay.querySelector('[data-reset]').onclick=()=>{ zoom=1; rotation=0; offsetX=0; offsetY=0; cropRect=null; zoomRange.value=100; angleRange.value=0; render(); };
-  overlay.querySelector('[data-cancel]').onclick=()=>overlay.remove();
-  overlay.querySelector('[data-apply]').onclick=()=>{
-    if(cropRect && cropRect.w>10 && cropRect.h>10){
-      const off=document.createElement('canvas');
-      off.width=canvas.width; off.height=canvas.height;
-      const ox=off.getContext('2d');
-      ox.clearRect(0,0,off.width,off.height);
+  function pointFromClient(clientX, clientY){
+    const r = canvas.getBoundingClientRect();
+    return { x:(clientX-r.left)*dpr, y:(clientY-r.top)*dpr };
+  }
+  function point(e){ return pointFromClient(e.clientX, e.clientY); }
+  function distance(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+  function baseScale(){ return Math.min(canvas.width / img.width, canvas.height / img.height); }
+  function imageRect(){
+    const scale = baseScale() * zoom;
+    const w = img.width * scale;
+    const h = img.height * scale;
+    return { x:(canvas.width - w)/2, y:(canvas.height - h)/2, w, h };
+  }
+  function clampCrop(){
+    if(!cropRect) return;
+    const imgBox = imageRect();
+    const x1 = Math.max(imgBox.x, cropRect.x);
+    const y1 = Math.max(imgBox.y, cropRect.y);
+    const x2 = Math.min(imgBox.x + imgBox.w, cropRect.x + cropRect.w);
+    const y2 = Math.min(imgBox.y + imgBox.h, cropRect.y + cropRect.h);
+    if(x2 <= x1 || y2 <= y1){ cropRect = null; return; }
+    cropRect = { x:x1, y:y1, w:x2-x1, h:y2-y1 };
+  }
+  function render(){
+    ctx.fillStyle = '#100d0a';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    const box = imageRect();
+    ctx.save();
+    ctx.translate(canvas.width/2, canvas.height/2);
+    ctx.rotate(rotation * Math.PI / 180);
+    ctx.drawImage(img, -box.w/2, -box.h/2, box.w, box.h);
+    ctx.restore();
+
+    // Light guide around the image area.
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,.14)';
+    ctx.lineWidth = 1*dpr;
+    ctx.strokeRect(box.x, box.y, box.w, box.h);
+    ctx.restore();
+
+    if(cropRect){
+      ctx.save();
+      ctx.strokeStyle = '#f5820a';
+      ctx.lineWidth = 2*dpr;
+      ctx.setLineDash([8*dpr,6*dpr]);
+      ctx.strokeRect(cropRect.x, cropRect.y, cropRect.w, cropRect.h);
+      ctx.fillStyle = 'rgba(245,130,10,.10)';
+      ctx.fillRect(cropRect.x, cropRect.y, cropRect.w, cropRect.h);
+      ctx.restore();
+    }
+
+    angleLabel.textContent = Math.round(rotation) + '°';
+  }
+
+  function beginCropIfSinglePointer(){
+    if(pointers.size === 1){
+      const only = [...pointers.values()][0];
+      drawStart = { x: only.x, y: only.y };
+      cropRect = { x: only.x, y: only.y, w: 1, h: 1 };
+      clampCrop();
+      render();
+    }
+  }
+
+  canvas.onpointerdown = (e)=>{
+    canvas.setPointerCapture(e.pointerId);
+    const p = point(e);
+    pointers.set(e.pointerId, p);
+    if(pointers.size === 2){
+      const pts = [...pointers.values()];
+      pinchStartDist = distance(pts[0], pts[1]) || 1;
+      pinchStartZoom = zoom;
+      drawStart = null;
+    } else {
+      beginCropIfSinglePointer();
+    }
+  };
+  canvas.onpointermove = (e)=>{
+    if(!pointers.has(e.pointerId)) return;
+    const p = point(e);
+    pointers.set(e.pointerId, p);
+    if(pointers.size === 2){
+      const pts = [...pointers.values()];
+      const dist = distance(pts[0], pts[1]) || pinchStartDist || 1;
+      zoom = Math.max(1, Math.min(6, pinchStartZoom * (dist / pinchStartDist)));
+      clampCrop();
+      render();
+      return;
+    }
+    if(drawStart){
+      cropRect = {
+        x: Math.min(drawStart.x, p.x),
+        y: Math.min(drawStart.y, p.y),
+        w: Math.abs(p.x - drawStart.x),
+        h: Math.abs(p.y - drawStart.y)
+      };
+      clampCrop();
+      render();
+    }
+  };
+  function endPointer(e){
+    pointers.delete(e.pointerId);
+    if(pointers.size === 0){
+      drawStart = null;
+    } else if(pointers.size === 1){
+      pinchStartDist = 0;
+      pinchStartZoom = zoom;
+      beginCropIfSinglePointer();
+    }
+  }
+  canvas.onpointerup = endPointer;
+  canvas.onpointercancel = endPointer;
+  canvas.onwheel = (e)=>{
+    e.preventDefault();
+    zoom = Math.max(1, Math.min(6, zoom * (e.deltaY < 0 ? 1.08 : 0.92)));
+    clampCrop();
+    render();
+  };
+
+  overlay.querySelector('[data-rotate="left"]').onclick = ()=>{ rotation = Math.max(-180, rotation - 90); angleRange.value = Math.round(rotation); render(); };
+  overlay.querySelector('[data-rotate="right"]').onclick = ()=>{ rotation = Math.min(180, rotation + 90); angleRange.value = Math.round(rotation); render(); };
+  angleRange.oninput = ()=>{ rotation = Number(angleRange.value); render(); };
+  overlay.querySelector('[data-reset]').onclick = ()=>{ zoom = 1; rotation = 0; cropRect = null; drawStart = null; angleRange.value = 0; render(); };
+  overlay.querySelector('[data-cancel]').onclick = ()=> overlay.remove();
+  overlay.querySelector('[data-apply]').onclick = ()=>{
+    if(cropRect && cropRect.w > 10 && cropRect.h > 10){
+      const resolutionFactor = Math.min(8, Math.max(2, Math.max((img.naturalWidth || img.width || 1) / Math.max(1, canvas.width), (img.naturalHeight || img.height || 1) / Math.max(1, canvas.height))));
+      const off = document.createElement('canvas');
+      off.width = Math.max(1, Math.round(canvas.width * resolutionFactor));
+      off.height = Math.max(1, Math.round(canvas.height * resolutionFactor));
+      const ox = off.getContext('2d', { alpha:false });
+      ox.fillStyle = '#ffffff';
+      ox.fillRect(0,0,off.width,off.height);
+      const box = imageRect();
       ox.save();
-      ox.translate(off.width/2 + offsetX*dpr, off.height/2 + offsetY*dpr);
-      ox.rotate(rotation*Math.PI/180);
-      const base = Math.min(off.width / img.width, off.height / img.height);
-      const scale = base * zoom;
-      const w = img.width * scale, h = img.height * scale;
-      ox.drawImage(img, -w/2, -h/2, w, h);
+      ox.translate(off.width/2, off.height/2);
+      ox.rotate(rotation * Math.PI / 180);
+      ox.drawImage(img, -(box.w*resolutionFactor)/2, -(box.h*resolutionFactor)/2, box.w*resolutionFactor, box.h*resolutionFactor);
       ox.restore();
 
-      const sx=Math.max(0, Math.min(off.width-1, Math.round(cropRect.x)));
-      const sy=Math.max(0, Math.min(off.height-1, Math.round(cropRect.y)));
-      const sw=Math.max(1, Math.min(off.width-sx, Math.round(cropRect.w)));
-      const sh=Math.max(1, Math.min(off.height-sy, Math.round(cropRect.h)));
-
-      const out=document.createElement('canvas');
-      out.width=Math.max(1, Math.round(sw/dpr));
-      out.height=Math.max(1, Math.round(sh/dpr));
-      const ex=out.getContext('2d');
+      const sx = Math.max(0, Math.min(off.width-1, Math.round(cropRect.x * resolutionFactor)));
+      const sy = Math.max(0, Math.min(off.height-1, Math.round(cropRect.y * resolutionFactor)));
+      const sw = Math.max(1, Math.min(off.width - sx, Math.round(cropRect.w * resolutionFactor)));
+      const sh = Math.max(1, Math.min(off.height - sy, Math.round(cropRect.h * resolutionFactor)));
+      const out = document.createElement('canvas');
+      out.width = sw;
+      out.height = sh;
+      const ex = out.getContext('2d', { alpha:false });
+      ex.fillStyle = '#ffffff';
+      ex.fillRect(0,0,out.width,out.height);
       ex.drawImage(off, sx, sy, sw, sh, 0, 0, out.width, out.height);
-      opts.onApply(out.toDataURL('image/jpeg',0.95));
-    } else { opts.onApply(opts.src); }
+      opts.onApply(out.toDataURL('image/jpeg', 0.98));
+    } else {
+      opts.onApply(opts.src);
+    }
     overlay.remove();
   };
-  window.addEventListener('resize', ()=>{ size(); render(); }, {once:true});
+  window.addEventListener('resize', ()=>{ size(); render(); }, { once:true });
 }
+
 
 (function(){
   const overlay=document.getElementById('introOverlay');
