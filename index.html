@@ -2721,6 +2721,10 @@ gl-crop-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:99999;
 // - Rotate if the photo needs to be straightened.
 // - Export keeps a higher-resolution crop so Word photo logs stay sharp.
 function openPreciseCropper(opts){
+  // Prevent duplicate crop overlays if Crop is tapped more than once.
+  const existingOverlay = document.querySelector('.gl-crop-overlay');
+  if(existingOverlay) existingOverlay.remove();
+
   const overlay = document.createElement('div');
   overlay.className = 'gl-crop-overlay';
   overlay.innerHTML = `
