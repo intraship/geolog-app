@@ -1,6 +1,8 @@
 
 
 
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -324,7 +326,7 @@
               <li>When the boring is complete, press <strong>Review</strong> to check everything, confirm times, and export.</li>
             </ol>
           </div>
-          <label>Point ID* <input id="bhPointId" placeholder="BR3-17"></label>
+          <div class="time-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px"><label>Point ID* <input id="bhPointId" placeholder="BR3-17"></label><label>Section <input id="bhSection" placeholder="T4007"></label></div>
           <div class="time-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px">
             <label>Date <input id="bhDate" type="date"></label>
             <label>Time Started <input id="bhTimeStart" type="datetime-local"></label>
@@ -988,15 +990,16 @@ async function hydrateHome(){
     const photos = (b.samples||[]).reduce((a,s)=>a+((s.photos||[]).length),0) + (b.patchPhoto ? 1 : 0);
     const div = document.createElement('div');
     div.className = 'item';
-    div.innerHTML = `<div class="title">${b.header.pointId}</div><div>${b.samples.length} samples · ${undist} undisturbed · ${photos} photos · Hole ${b.header.holeDepth || '—'} ft</div>`;
+    const cardSection = (b.header.section || '').trim();
+    const cardTitle = `${b.header.pointId || 'Draft'}${cardSection ? ` (${cardSection})` : ''}`;
+    div.innerHTML = `<div class="title">${cardTitle}</div><div>${b.samples.length} samples · ${undist} undisturbed · ${photos} photos · Hole ${b.header.holeDepth || '—'} ft</div>`;
     const row = document.createElement('div');
     row.className = 'compact-actions';
     const open = document.createElement('button'); open.textContent='Open'; open.onclick=()=>openBoring(b.id || b.header.pointId);
     const exp = document.createElement('button'); exp.textContent='Field'; exp.onclick=async()=>{
       const settings = await getSettings();
-      const safeName = safeFileName(b.header.pointId || 'boring');
       const wb = buildGintWorkbook([b], settings);
-      await exportWorkbookFile(wb, `${safeName}_field_log.xlsx`);
+      await exportWorkbookFile(wb, buildExportFileName(b, 'Field Log', 'xlsx'));
       toast('Field log exported');
     };
     const photo = document.createElement('button'); photo.textContent='Photo Log (Cropped)'; photo.onclick=async()=>{
@@ -1088,8 +1091,9 @@ async function openBoring(id){
 
 function fillBoringForm(){
   const h = currentBoring.header;
-  $('boringTag').textContent = h.pointId || 'Draft';
+  $('boringTag').textContent = `${h.pointId || 'Draft'}${h.section ? ` (${h.section})` : ''}`;
   $('bhPointId').value = h.pointId || '';
+  $('bhSection').value = h.section || '';
   $('bhDate').value = h.date || '';
   $('bhTimeStart').value = h.timeStart || '';
   $('bhTimeEnd').value = h.timeEnd || '';
@@ -1166,6 +1170,7 @@ function collectBoringForm(){
   currentBoring.header = {
     ...currentBoring.header,
     pointId:$('bhPointId').value.trim(),
+    section:$('bhSection').value.trim(),
     date:$('bhDate').value,
     timeStart:$('bhTimeStart').value,
     timeEnd:$('bhTimeEnd').value,
@@ -1210,7 +1215,7 @@ function sampleSubtitle(s){
 
 function renderBoringLists(){
   $('sampleCount') && ($('sampleCount').textContent = String(currentBoring.samples.length));
-  $('sampleHeaderMeta').textContent = `${currentBoring.header.pointId || 'Draft'} · Hole ${currentBoring.header.holeDepth ?? '—'} ft`;
+  $('sampleHeaderMeta').textContent = `${currentBoring.header.pointId || 'Draft'}${currentBoring.header.section ? ` (${currentBoring.header.section})` : ''} · Hole ${currentBoring.header.holeDepth ?? '—'} ft`;
 
   $('sampleList').innerHTML = currentBoring.samples.length ? '' : '<div class="item">No samples yet.</div>';
 
@@ -1278,6 +1283,7 @@ function reviewHeaderRows(h){
   const orderedRemarks = formattedGeneralRemarks(h);
   const rows = [
     ['Point ID', h.pointId || '—'],
+    ['Section', h.section || '—'],
     ['Date', h.date || '—'],
     ['Time Started', h.timeStart ? fmtET(h.timeStart) : '—'],
     ['Time Finished', h.timeEnd ? fmtET(h.timeEnd) : '—'],
@@ -1301,6 +1307,8 @@ function syncReviewFieldsToHeader(){
   currentBoring.header.date = $('reviewDate').value || currentBoring.header.date || '';
   currentBoring.header.timeStart = $('reviewTimeStart').value || currentBoring.header.timeStart || '';
   currentBoring.header.timeEnd = $('reviewTimeEnd').value || currentBoring.header.timeEnd || '';
+  // Do not overwrite editable header fields like Section here.
+  // This sync is only for propagating review date/time edits back to the header.
   if($('bhDate')) $('bhDate').value = currentBoring.header.date || '';
   if($('bhTimeStart')) $('bhTimeStart').value = currentBoring.header.timeStart || '';
   if($('bhTimeEnd')) $('bhTimeEnd').value = currentBoring.header.timeEnd || '';
@@ -1315,7 +1323,7 @@ function renderReviewScreen(){
   if(!currentBoring.header.date) currentBoring.header.date = nowETInput().slice(0,10);
   if(!currentBoring.header.timeStart) currentBoring.header.timeStart = nowETInput();
   if(!currentBoring.header.timeEnd) currentBoring.header.timeEnd = nowETInput();
-  $('reviewTag').textContent = currentBoring.header.pointId || 'Review';
+  $('reviewTag').textContent = `${currentBoring.header.pointId || 'Review'}${currentBoring.header.section ? ` (${currentBoring.header.section})` : ''}`;
   if($('reviewDate')) $('reviewDate').value = currentBoring.header.date || '';
   if($('reviewTimeStart')) $('reviewTimeStart').value = currentBoring.header.timeStart || '';
   if($('reviewTimeEnd')) $('reviewTimeEnd').value = currentBoring.header.timeEnd || '';
@@ -1398,9 +1406,8 @@ async function saveAndExportCurrentBoring(){
   if(!(await saveBoringHeader())) return;
   renderReviewScreen();
   const settings = await getSettings();
-  const safeName = String(currentBoring.header.pointId || 'boring').replace(/[^a-z0-9_-]+/gi,'_');
   const wb = buildGintWorkbook([currentBoring], settings);
-  await exportWorkbookFile(wb, `${safeName}_field_log.xlsx`);
+  await exportWorkbookFile(wb, buildExportFileName(currentBoring, 'Field Log', 'xlsx'));
   showScreen('home');
   await hydrateHome();
   toast('Field log exported');
@@ -2108,7 +2115,30 @@ function buildGintWorkbook(borings,settings){
 // These functions prepare XLSX and DOCX files and try to use the iPhone share sheet
 // on Safari so users can save to Files / OneDrive more reliably.
 function safeFileName(name){
-  return String(name || 'file').replace(/[^a-z0-9._-]+/gi,'_');
+  return String(name || 'file')
+    .replace(/[\\/:*?"<>|]+/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+function formatExportDate(dateValue){
+  const raw = String(dateValue || '').trim();
+  if(raw && /^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw.replace(/-/g,'_');
+  return nowETInput().slice(0,10).replace(/-/g,'_');
+}
+function extractPointAndSection(boring){
+  const header = boring?.header || {};
+  const rawPointId = String(header.pointId || 'boring').trim();
+  const explicitSection = String(header.section || '').trim();
+  const parenMatch = rawPointId.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+  const pointId = (parenMatch ? parenMatch[1] : rawPointId).trim() || 'boring';
+  const section = (explicitSection || (parenMatch ? parenMatch[2] : '')).trim();
+  return { pointId, section };
+}
+function buildExportFileName(boring, label, ext){
+  const { pointId, section } = extractPointAndSection(boring);
+  const datePart = formatExportDate(boring?.header?.date);
+  const sectionPart = section ? ` (${section})` : '';
+  return safeFileName(`${datePart} ${pointId}${sectionPart} ${label}.${ext}`);
 }
 function getBrowserFlags(){
   const ua = navigator.userAgent || '';
@@ -2432,7 +2462,9 @@ async function exportPhotoLogDocForBorings(borings, settings, filenameBase, phot
     const doc = new docx.Document({ sections });
     const blob = await docx.Packer.toBlob(doc);
     setExportProgress(98, `Starting download… (${Math.max(1, Math.round(blob.size/1024/1024))} MB)`);
-    await downloadBlob(blob, `${safeFileName(filenameBase)}_${photoMode === 'original' ? 'original' : 'cropped'}_photo_log.docx`);
+    const targetBoring = (borings || [])[0] || null;
+    const photoLabel = `Photo Log${photoMode === 'original' ? '_original' : '_cropped'}`;
+    await downloadBlob(blob, buildExportFileName(targetBoring, photoLabel, 'docx'));
     setExportProgress(100, 'Share sheet opened');
     setTimeout(hideExportProgress, 400);
     toast(`${photoMode === 'original' ? 'Original' : 'Cropped'} photo log ready`);
@@ -2453,10 +2485,10 @@ function ensureHomeExportButtons(){
     const borings = await DB.all('borings');
     if(!borings.length) return toast('No borings to export', true);
     const settings = await getSettings();
-    const date = new Date().toISOString().slice(0,10);
+    const date = nowETInput().slice(0,10).replace(/-/g,'_');
     let initials = '';
     if(settings.inspector) initials = settings.inspector.split(' ').map(w=>w[0]).join('').toUpperCase();
-    const filename = `${date}_field_logs${initials ? '_' + initials : ''}.xlsx`;
+    const filename = safeFileName(`${date} All Borings${initials ? ' ' + initials : ''} Field Log.xlsx`);
     setExportProgress(10, 'Preparing field log…', 'Preparing field log…');
     await exportWorkbookFile(buildGintWorkbook(borings, settings), filename);
     hideExportProgress();
@@ -2636,12 +2668,12 @@ $('exportGint') && ($('exportGint').onclick = async()=>{
   const borings = await DB.all('borings');
   if(!borings.length) return toast('No borings to export',true);
   const settings = await getSettings();
-  const date = new Date().toISOString().slice(0,10);
+  const date = nowETInput().slice(0,10).replace(/-/g,'_');
   let initials = '';
   if(settings.inspector) {
     initials = settings.inspector.split(' ').map(w=>w[0]).join('').toUpperCase();
   }
-  const filename = `${date}_field_logs${initials ? '_' + initials : ''}.xlsx`;
+  const filename = safeFileName(`${date} All Borings${initials ? ' ' + initials : ''} Field Log.xlsx`);
   await exportWorkbookFile(buildGintWorkbook(borings,settings), filename);
 });
 
@@ -2721,10 +2753,6 @@ gl-crop-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:99999;
 // - Rotate if the photo needs to be straightened.
 // - Export keeps a higher-resolution crop so Word photo logs stay sharp.
 function openPreciseCropper(opts){
-  // Prevent duplicate crop overlays if Crop is tapped more than once.
-  const existingOverlay = document.querySelector('.gl-crop-overlay');
-  if(existingOverlay) existingOverlay.remove();
-
   const overlay = document.createElement('div');
   overlay.className = 'gl-crop-overlay';
   overlay.innerHTML = `
