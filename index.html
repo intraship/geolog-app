@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>GeoLogger v0.96</title>
+  <title>GeoLogger v0.97</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js">
 (function(){
   const overlay=document.getElementById('introOverlay');
@@ -181,7 +181,7 @@
     </div>
   </header>
 
-  <div class="version">VERSION: v0.96 · Field/Office Tool</div>
+  <div class="version">VERSION: v0.97 · Field/Office Tool</div>
 
   
   <div id="introOverlay" class="intro-overlay active">
@@ -322,7 +322,7 @@
               <li>When the boring is complete, press <strong>Review</strong> to check everything, confirm times, and export.</li>
             </ol>
           </div>
-          <div class="time-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px"><label>Point ID* <input id="bhPointId" placeholder="BR3-17"></label><label>Section <input id="bhSection" placeholder="T4007"></label><label>Log Type <select id="bhLogType"><option value="field">Field Boring</option><option value="well">Well Log</option></select></label></div>
+          <div class="time-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px"><label>Point ID* <input id="bhPointId" placeholder="BR3-17"></label><label>Section <input id="bhSection" placeholder="T4007"></label><label>Log Type <select id="bhLogType"><option value="field">Field Boring</option><option value="geotherm">Geotherm</option><option value="well">Well Log</option></select></label></div>
           <div class="time-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px">
             <label>Date <input id="bhDate" type="date"></label>
             <label>Time Started <input id="bhTimeStart" type="datetime-local"></label>
@@ -351,31 +351,35 @@
           <label>Mud Added at Depth <input id="bhMudDepth" type="number" step="0.5" placeholder="10"></label>
           <label>Latitude <input id="bhLatitude" placeholder="XX"></label>
           <label>Longitude <input id="bhLongitude" placeholder="XX"></label>
-          <label>DB Geotherms <input id="bhDbGeotherms" placeholder="Optional"></label>
-          <label>OW / Well Info <input id="bhOwInfo" placeholder="Optional"></label>
-        </div>
+                  </div>
 
         <div id="wellFieldsCard" class="card help-card hidden" style="margin-top:12px">
           <h4>Well log fields</h4>
           <div class="guide-note">Use these when the log type is set to Well Log. The export will follow the uploaded NJTA well installation workbook format.</div>
           <div class="grid2">
             <label>Ground Elevation <input id="bhWellGroundElevation" type="number" step="0.01" placeholder="65.42"></label>
-            <label>Datum <input id="bhWellDatum" placeholder="NAVD88"></label>
-            <label>Drilling Method <input id="bhWellDrillingMethod" placeholder="Water Rotary"></label>
-            <label>Development Method <input id="bhWellDevelopmentMethod" placeholder="Overpumping"></label>
-            <label>Casing Material <input id="bhWellCasingMaterial" placeholder='4&quot; Steel Pipe'></label>
-            <label>Riser Pipe <input id="bhWellRiserPipe" placeholder='2&quot; PVC'></label>
-            <label>Screen Material <input id="bhWellScreenMaterial" placeholder='2&quot; PVC'></label>
-            <label>Screen Length (ft) <input id="bhWellScreenLength" type="number" step="0.5" placeholder="10"></label>
-            <label>Grout <input id="bhWellGrout" placeholder="#2"></label>
-            <label>Seal <input id="bhWellSeal" placeholder="Bentonite"></label>
-            <label>Screen Pack <input id="bhWellScreenPack" placeholder="#2 Sand"></label>
-            <label>Borehole Diameter <input id="bhWellBoreholeDiameter" placeholder='4&quot;'></label>
             <label>Top of Screen Pack (ft) <input id="bhWellTopScreenPack" type="number" step="0.5" placeholder="10"></label>
             <label>Top of Screen (ft) <input id="bhWellTopScreen" type="number" step="0.5" placeholder="20"></label>
             <label>Bottom of Screen (ft) <input id="bhWellBottomScreen" type="number" step="0.5" placeholder="30"></label>
             <label>Bottom of Borehole (ft) <input id="bhWellBottomBorehole" type="number" step="0.5" placeholder="35"></label>
           </div>
+          <details id="wellDefaultsCard" style="margin:10px 0 12px;background:#1a1613;border:1px solid #4d3a24;border-radius:12px;padding:10px 12px">
+            <summary style="cursor:pointer;font-weight:700">Hide Info</summary>
+            <div style="font-size:12px;color:var(--muted);margin-top:8px">These fields are prefilled by default and can still be changed.</div>
+            <div class="grid2" style="margin-top:10px">
+              <label>Datum <input id="bhWellDatum" placeholder="NAVD88"></label>
+              <label>Drilling Method <input id="bhWellDrillingMethod" placeholder="Water Rotary"></label>
+              <label>Development Method <input id="bhWellDevelopmentMethod" placeholder="Overpumping"></label>
+              <label>Casing Material <input id="bhWellCasingMaterial" placeholder='4&quot; Steel Pipe'></label>
+              <label>Riser Pipe <input id="bhWellRiserPipe" placeholder='2&quot; PVC'></label>
+              <label>Screen Material <input id="bhWellScreenMaterial" placeholder='2&quot; PVC'></label>
+              <label>Screen Length (ft) <input id="bhWellScreenLength" type="number" step="0.5" placeholder="10"></label>
+              <label>Grout <input id="bhWellGrout" placeholder="#2"></label>
+              <label>Seal <input id="bhWellSeal" placeholder="Bentonite"></label>
+              <label>Screen Pack <input id="bhWellScreenPack" placeholder="#2 Sand"></label>
+              <label>Borehole Diameter <input id="bhWellBoreholeDiameter" placeholder='4&quot;'></label>
+            </div>
+          </details>
           <label>Well Log Remarks <textarea id="bhWellRemarks" placeholder="One remark per line"></textarea></label>
         </div>
 
@@ -539,7 +543,7 @@
   <div id="toast" class="toast"></div>
 
   <script>
-const APP_VERSION = 'v0.96';
+const APP_VERSION = 'v0.97';
 const DEFAULTS = {
   project:'NJ Turnpike 1 to 4 Capacity Enhancements Program',
   contractNo:'OPS No. T3839',
@@ -955,13 +959,9 @@ function orderedRemarks(){
     .filter(Boolean);
   const structured = [];
   const mudDepth = String($('bhMudDepth')?.value || '').trim();
-  const dbGeotherms = String($('bhDbGeotherms')?.value || '').trim();
-  const owInfo = String($('bhOwInfo')?.value || '').trim();
   const lat = String($('bhLatitude')?.value || '').trim() || 'XX';
   const lon = String($('bhLongitude')?.value || '').trim() || 'XX';
   if(mudDepth) structured.push(`Introduced drilling fluid (Bentonite) at ${mudDepth} feet.`);
-  if(dbGeotherms) structured.push(`Geotherms: ${dbGeotherms}`);
-  if(owInfo) structured.push(`OW Info: ${owInfo}`);
   structured.push(`Latitude: ${lat}  Longitude: ${lon}`);
   return [...picked, ...extraLines, ...structured].join('\n');
 }
@@ -983,7 +983,7 @@ function lithRows(b){
   if(first.number==='GB-1' && first.asphaltThickness){
     const thicknessFt = (parseFloat(String(first.asphaltThickness).replace('"','')) || 0) / 12;
     if(thicknessFt > 0){
-      rows.push([b.header.pointId, Number(thicknessFt.toFixed(2)), 0, 'ASPHALT']);
+      rows.push([boringDisplayId(b), Number(thicknessFt.toFixed(2)), 0, 'ASPHALT']);
       currentTop = Number(thicknessFt.toFixed(2));
     }
   }
@@ -1000,13 +1000,13 @@ function lithRows(b){
       const breakDepth = sm && parseInt(sm[1],10) >= 4
         ? Number((Number(prev.bottomDepth)+0.5).toFixed(2))
         : Number(prev.bottomDepth);
-      rows.push([b.header.pointId, breakDepth, currentTop, activeKey]);
+      rows.push([boringDisplayId(b), breakDepth, currentTop, activeKey]);
       activeKey = thisKey;
       currentTop = breakDepth;
     }
   }
 
-  rows.push([b.header.pointId, b.header.holeDepth || '', currentTop, activeKey]);
+  rows.push([boringDisplayId(b), b.header.holeDepth || '', currentTop, activeKey]);
   return rows;
 }
 
@@ -1142,8 +1142,6 @@ async function newBoring(){
       mudDepth:null,
       latitude:'',
       longitude:'',
-      dbGeotherms:'',
-      owInfo:'',
       logType:'field',
       wellGroundElevation:null,
       wellDatum:'NAVD88',
@@ -1218,20 +1216,18 @@ function fillBoringForm(){
   $('bhMudDepth').value = h.mudDepth ?? '';
   $('bhLatitude').value = h.latitude || '';
   $('bhLongitude').value = h.longitude || '';
-  $('bhDbGeotherms').value = h.dbGeotherms || '';
-  $('bhOwInfo').value = h.owInfo || '';
   $('bhWellGroundElevation').value = h.wellGroundElevation ?? '';
   $('bhWellDatum').value = h.wellDatum || 'NAVD88';
-  $('bhWellDrillingMethod').value = h.wellDrillingMethod || '';
-  $('bhWellDevelopmentMethod').value = h.wellDevelopmentMethod || '';
-  $('bhWellCasingMaterial').value = h.wellCasingMaterial || '';
-  $('bhWellRiserPipe').value = h.wellRiserPipe || '';
-  $('bhWellScreenMaterial').value = h.wellScreenMaterial || '';
-  $('bhWellScreenLength').value = h.wellScreenLength ?? '';
-  $('bhWellGrout').value = h.wellGrout || '';
+  $('bhWellDrillingMethod').value = h.wellDrillingMethod || 'Water Rotary';
+  $('bhWellDevelopmentMethod').value = h.wellDevelopmentMethod || 'Overpumping';
+  $('bhWellCasingMaterial').value = h.wellCasingMaterial || '4" Steel Pipe';
+  $('bhWellRiserPipe').value = h.wellRiserPipe || '2" PVC';
+  $('bhWellScreenMaterial').value = h.wellScreenMaterial || '2" PVC';
+  $('bhWellScreenLength').value = h.wellScreenLength ?? 10;
+  $('bhWellGrout').value = h.wellGrout || '#2';
   $('bhWellSeal').value = h.wellSeal || '';
-  $('bhWellScreenPack').value = h.wellScreenPack || '';
-  $('bhWellBoreholeDiameter').value = h.wellBoreholeDiameter || '';
+  $('bhWellScreenPack').value = h.wellScreenPack || '#2 Sand';
+  $('bhWellBoreholeDiameter').value = h.wellBoreholeDiameter || '4"';
   $('bhWellTopScreenPack').value = h.wellTopScreenPack ?? '';
   $('bhWellTopScreen').value = h.wellTopScreen ?? '';
   $('bhWellBottomScreen').value = h.wellBottomScreen ?? '';
@@ -1296,11 +1292,14 @@ function showImageModal(src, alt){
 }
 
 function updateWellFieldsVisibility(){
-  const isWell = ($('bhLogType')?.value || currentBoring?.header?.logType || 'field') === 'well';
+  const logType = ($('bhLogType')?.value || currentBoring?.header?.logType || 'field');
+  const isWell = logType === 'well';
   const card = $('wellFieldsCard');
   if(card) card.classList.toggle('hidden', !isWell);
   const btn = $('exportWellReview');
   if(btn) btn.classList.toggle('hidden', !isWell);
+  const geo = $('geothermCard');
+  if(geo) geo.classList.toggle('hidden', logType !== 'geotherm');
 }
 
 function collectBoringForm(){
@@ -1324,8 +1323,6 @@ function collectBoringForm(){
     mudDepth:$('bhMudDepth').value ? Number($('bhMudDepth').value) : null,
     latitude:$('bhLatitude').value.trim(),
     longitude:$('bhLongitude').value.trim(),
-    dbGeotherms:$('bhDbGeotherms').value.trim(),
-    owInfo:$('bhOwInfo').value.trim(),
     logType:$('bhLogType').value || 'field',
     wellGroundElevation:$('bhWellGroundElevation').value ? Number($('bhWellGroundElevation').value) : null,
     wellDatum:$('bhWellDatum').value.trim(),
@@ -1460,8 +1457,6 @@ function reviewHeaderRows(h){
     ['Mud Added at Depth', h.mudDepth ?? '—'],
     ['Latitude', h.latitude || 'XX'],
     ['Longitude', h.longitude || 'XX'],
-    ['DB Geotherms', h.dbGeotherms || '—'],
-    ['OW / Well Info', h.owInfo || '—'],
     ['General Remarks', orderedRemarks.length ? orderedRemarks.join('<br>') : '—']
   ];
   return rows;
@@ -2271,9 +2266,10 @@ function buildGintWorkbook(borings,settings){
 
   borings.forEach(b=>{
     const h = b.header;
+    const displayId = boringDisplayId(b);
 
     point.push([
-      h.pointId,'',h.holeDepth||'',h.contractor||settings.contractor||'','','',
+      displayId,'',h.holeDepth||'',h.contractor||settings.contractor||'','','',
       h.rigNo||'',h.rigType||'',h.driller||'',h.helper||'','','','','',
       '4',140,'Automatic Hammer','2','1-3/8',140,30,'Shelby Tube',24,'3','2.938',
       h.inspector||settings.inspector||'',h.generalRemarks||'',h.location||settings.location||'New Jersey','',h.latitude||'',h.longitude||'',''
@@ -2283,20 +2279,20 @@ function buildGintWorkbook(borings,settings){
       (b.casing||[]).forEach(c=>{
         let val = String(c.blows||'').trim();
         if(val==='' || val==='0') val='PUSH';
-        casing.push([h.pointId, Number(c.depth), val]);
+        casing.push([displayId, Number(c.depth), val]);
       });
     }
 
     if(h.gwDepth!==null && h.gwDepth!=='' && h.gwDepth!==undefined){
-      gw.push([h.pointId, fmtET(h.gwDateTime), h.gwDepth]);
+      gw.push([displayId, fmtET(h.gwDateTime), h.gwDepth]);
     }
 
     lithRows(b).forEach(r=>lith.push(r));
 
     const pq = payQty(b.samples);
-    pay.push([h.pointId,'','',h.holeDepth||'','','','','',pq.ordinary||'',pq.undist||'','','','','','','']);
+    pay.push([displayId,'','',h.holeDepth||'','','','','',pq.ordinary||'',pq.undist||'','','','','','','']);
 
-    prog.push([h.pointId, fmtET(h.timeStart||h.date||''), fmtET(h.timeEnd||''), h.weather||'', h.holeDepth||'']);
+    prog.push([displayId, fmtET(h.timeStart||h.date||''), fmtET(h.timeEnd||''), h.weather||'', h.holeDepth||'']);
 
     b.samples.forEach(s=>{
       const blows = isGB(s.number)
@@ -2309,7 +2305,7 @@ function buildGintWorkbook(borings,settings){
             });
 
       samp.push([
-        h.pointId,
+        displayId,
         s.topDepth,
         s.bottomDepth ?? '',
         isGB(s.number) ? '' : (s.recoveryIn ?? ''),
@@ -2517,7 +2513,7 @@ function photoCaptionForExport(b, s){
   const numLabel = formatSampleNumber(s.number || '', s.sampleType || inferSampleType(s));
   const top = s.topDepth ?? '—';
   const bottom = s.bottomDepth ?? '—';
-  return `Boring ${b.header?.pointId || '—'}, Sample ${numLabel}, Depth ${top}-${bottom} ft.`;
+  return `Boring ${boringDisplayId(b) || '—'}, Sample ${numLabel}, Depth ${top}-${bottom} ft.`;
 }
 
 function ensureProgressUi(){
@@ -3426,879 +3422,24 @@ function openPreciseCropper(opts){
 </script>
 
 
-<script>
-(function(){
-  const $ = id => document.getElementById(id);
-  function canonicalRemarkKey(s){
-    return String(s||'')
-      .toLowerCase()
-      .replace(/cropped with asphalt/g, 'patched with asphalt')
-      .replace(/[^a-z0-9]+/g,' ')
-      .trim();
-  }
-  const REMARK_KEY_TO_OPTION = Object.fromEntries((window.REMARK_OPTIONS || []).map(opt => [canonicalRemarkKey(opt), opt]));
-
-  window.parseRemarkState = function(raw){
-    const lines = String(raw || '')
-      .split(/\r?\n/)
-      .map(line => String(line||'').replace(/^\s*\d+\s*[\.)-]?\s*/, '').trim())
-      .filter(Boolean);
-    const selected = [];
-    const manual = [];
-    for(const line of lines){
-      const option = REMARK_KEY_TO_OPTION[canonicalRemarkKey(line)];
-      if(option){
-        if(!selected.includes(option)) selected.push(option);
-      } else if(!manual.includes(line)) {
-        manual.push(line);
-      }
-    }
-    return {selected, manual};
-  };
-
-  window.orderedRemarks = function(){
-    const currentSelected = Array.isArray(window.remarkSelections) ? [...window.remarkSelections] : [];
-    const extraLines = String($('bhRemarks')?.value || '')
-      .split(/\r?\n/)
-      .map(line => line.trim())
-      .filter(Boolean);
-    const manual = [];
-    for(const line of extraLines){
-      const option = REMARK_KEY_TO_OPTION[canonicalRemarkKey(line)];
-      if(option){
-        if(!currentSelected.includes(option)) currentSelected.push(option);
-      } else if(!manual.includes(line)) {
-        manual.push(line);
-      }
-    }
-    const picked = (window.REMARK_OPTIONS || [])
-      .filter(r => currentSelected.includes(r))
-      .map((r,i)=>`${i+1}. ${r}`);
-    return [...picked, ...manual].join('\n');
-  };
-
-  if(typeof window.fillBoringForm === 'function'){
-    const origFillBoringForm = window.fillBoringForm;
-    window.fillBoringForm = function(){
-      origFillBoringForm();
-      try{
-        const remarkState = window.parseRemarkState(window.currentBoring?.header?.generalRemarks || '');
-        window.remarkSelections = [...remarkState.selected];
-        if($('bhRemarks')) $('bhRemarks').value = remarkState.manual.join('\n');
-        if(typeof window.renderRemarkButtons === 'function') window.renderRemarkButtons();
-      }catch(e){ console.warn('remark refill failed', e); }
-      if(typeof window.updateDynamicHelp === 'function') window.updateDynamicHelp();
-    };
-  }
-  const HELP = {
-    general: {
-      title: 'Welcome to GeoLogger v0.96',
-      subtitle: 'This app saves everything you enter into the boring record and uses that saved information to build review screens, photo logs, and exports.',
-      boxes: [
-        ['What gets reported','Every field you enter becomes part of the saved record: header info, samples, Shelby tubes, casing, remarks, photos, and times.'],
-        ['Automatic progress','As you save each step, the boring updates. The home screen and review/export screens use the saved data.'],
-        ['Basic workflow','Start Report → create a boring → fill Boring Header → Add Sample / Add Shelby / Edit Casing → Review → Save & Export.'],
-        ['Navigation','Use Back to return to the previous step. Save before leaving a step so your progress stays with that boring.']
-      ]
-    },
-    boring: {
-      title: 'Boring Header: what to do here',
-      subtitle: 'Fill out the boring information first. This header controls what gets reported in the field log and review screen.',
-      boxes: [
-        ['Required basics','Enter Point ID, Date, Time Started, driller/helper/inspector, rig info, and hole depth.'],
-        ['General remarks','Use the orange remark buttons for common remarks. Use Additional Remarks only for custom text that is not one of the preset buttons.'],
-        ['Automatic times','Time Started and Time Finished are report fields. They auto-fill, but you can edit them here or in Review.'],
-        ['Next step','After the header is saved, use Add Sample, Add Shelby, or Edit Casing to keep building the boring.']
-      ]
-    },
-    sample: {
-      title: 'Add Sample: how to use this step',
-      subtitle: 'This step builds a regular sample record. The sample information you save here is used in review, exports, and photo logs.',
-      boxes: [
-        ['Start here','Confirm sample number, top depth, and bottom depth first.'],
-        ['Work through the steps','Use Next and Back to move through blow counts, soil description, moisture/modifiers, photos, and finish details.'],
-        ['Photos','Add photos to this sample. Crop/Delete only changes the photo for this sample.'],
-        ['Finish','When the sample is complete, press Save Sample. Then return to the boring or add another sample.']
-      ]
-    },
-    shelby: {
-      title: 'Add Shelby: how to use this step',
-      subtitle: 'This step creates a Shelby tube entry. Shelby entries still save into the boring and show up in review/export.',
-      boxes: [
-        ['Start here','Check the Shelby number and depth range first.'],
-        ['Description','Confirm the soil/material description and any recovery or PP values that apply.'],
-        ['Photos','Add the Shelby photos for this entry. Crop/Delete only changes the photo for this Shelby entry.'],
-        ['Finish','Press Save Sample when done. Then return to the boring or continue with the next item.']
-      ]
-    },
-    casing: {
-      title: 'Edit Casing: how to use this step',
-      subtitle: 'Use this screen to build the casing record for the boring. Saved casing entries become part of the export.',
-      boxes: [
-        ['Enter depth and blows','Set the start depth and use the interval buttons or manual total blows.'],
-        ['Add each entry','Press Add Casing Entry for each casing line you want saved.'],
-        ['Check the list','Review the saved casing entries before you leave this screen.'],
-        ['Finish','Press Save Casing to keep the casing record with this boring.']
-      ]
-    },
-    review: {
-      title: 'Review & Export: final check',
-      subtitle: 'Review shows what will be reported from the saved boring. You can still go back, fix something, and return before exporting.',
-      boxes: [
-        ['Times','Check Date, Time Started, and Time Finished. Use current time for finish if needed, or edit them manually.'],
-        ['Original vs Cropped','Original photo log uses the original photos. Cropped photo log uses edited/cropped photos where available.'],
-        ['Go back if needed','If a header, sample, Shelby entry, casing line, or photo needs changes, use Back, fix it, save, and return here.'],
-        ['Finish','Use Save & Export when the boring is ready.']
-      ]
-    }
-  };
-
-  function setHelpContent(mode){
-    const data = HELP[mode] || HELP.general;
-    if($('introTitle')) $('introTitle').textContent = data.title;
-    if($('introSubtitle')) $('introSubtitle').textContent = data.subtitle;
-    if($('introGrid')) $('introGrid').innerHTML = data.boxes.map(([h,p]) => `<div class="intro-box"><h5>${h}</h5><p>${p}</p></div>`).join('');
-  }
-
-  function updateHelpButtonLabel(mode){
-    const btn = $('reopenIntro');
-    if(!btn) return;
-    const labels = {
-      general: 'How to Use',
-      boring: 'How to Use: Boring Header',
-      sample: 'How to Use: Add Sample',
-      shelby: 'How to Use: Add Shelby',
-      casing: 'How to Use: Edit Casing',
-      review: 'How to Use: Review'
-    };
-    btn.textContent = labels[mode] || 'How to Use';
-  }
-
-  window.setHelpContent = setHelpContent;
-  window.updateHelpButtonLabel = updateHelpButtonLabel;
-
-  window.helpMode = 'general';
-  window.setHelpMode = function(mode){
-    window.helpMode = mode || 'general';
-    setHelpContent(window.helpMode);
-    updateHelpButtonLabel(window.helpMode);
-  };
-  window.updateDynamicHelp = function(){
-    let mode = window.helpMode || 'general';
-    const active = document.querySelector('.screen.active')?.id;
-    if(active === 'sample'){
-      const n = String((window.currentSample?.number) || (typeof currentSample !== 'undefined' && currentSample ? currentSample.number : '') || '');
-      mode = /^U-/i.test(n) ? 'shelby' : 'sample';
-    } else if(active === 'casing') {
-      mode = 'casing';
-    } else if(active === 'review') {
-      mode = 'review';
-    } else if(active === 'boring') {
-      mode = 'boring';
-    } else if(active === 'home' || active === 'settings') {
-      mode = 'general';
-    }
-    window.helpMode = mode;
-    setHelpContent(mode);
-    updateHelpButtonLabel(mode);
-  };
-
-  if(typeof window.showScreen === 'function'){
-    const origShowScreen = window.showScreen;
-    window.showScreen = function(id){
-      const result = origShowScreen(id);
-      try{ window.updateDynamicHelp(); }catch(e){}
-      return result;
-    };
-  }
-
-  function showHelp(){
-    window.updateDynamicHelp();
-    $('introOverlay')?.classList.add('active');
-  }
-  function hideHelp(){
-    $('introOverlay')?.classList.remove('active');
-    try{ localStorage.setItem('geologIntroSeen','1'); }catch(e){}
-  }
-
-  window.addEventListener('DOMContentLoaded', ()=>{
-    $('reopenIntro')?.addEventListener('click', (e)=>{ e.preventDefault(); showHelp(); });
-    $('closeIntro')?.addEventListener('click', hideHelp);
-    $('dismissIntro')?.addEventListener('click', hideHelp);
-
-    const addSampleBtn = $('addSampleBottom');
-    if(addSampleBtn) addSampleBtn.onclick = async()=>{ if(window.setHelpMode) window.setHelpMode('sample'); if(await window.saveBoringHeader()) { window.startSample(); window.updateDynamicHelp?.(); } };
-    const addSampleInlineBtn = $('addSampleInline');
-    if(addSampleInlineBtn) addSampleInlineBtn.onclick = async()=>{ if(window.setHelpMode) window.setHelpMode('sample'); if(await window.saveBoringHeader()) { window.startSample(); window.updateDynamicHelp?.(); } };
-    const addShelbyBtn = $('addShelby');
-    if(addShelbyBtn) addShelbyBtn.onclick = async()=>{ if(window.setHelpMode) window.setHelpMode('shelby'); if(await window.saveBoringHeader()) { window.startShelby(); window.updateDynamicHelp?.(); } };
-    const editCasingBtn = $('editCasing');
-    if(editCasingBtn) editCasingBtn.onclick = async()=>{
-      if(window.setHelpMode) window.setHelpMode('casing');
-      if(await window.saveBoringHeader()){
-        casingDraftRows = structuredClone(currentBoring.casingEntries || []);
-        casingEditorState = {startDepth:'', interval:5, totalBlows:''};
-        renderCasingEditor();
-        showScreen('casing');
-        window.updateDynamicHelp?.();
-      }
-    };
-
-    setHelpContent('general');
-    updateHelpButtonLabel('general');
-  });
-})();
-</script>
 
 
-<script>
-(function(){
-  function $(id){ return document.getElementById(id); }
-  function currentHelpMode(){
-    const active = document.querySelector('.screen.active')?.id || '';
-    if(active === 'sample'){
-      const n = String((window.currentSample?.number) || (typeof currentSample !== 'undefined' && currentSample ? currentSample.number : '') || '');
-      return /^U-/i.test(n) ? 'shelby' : 'sample';
-    }
-    if(active === 'casing') return 'casing';
-    if(active === 'review') return 'review';
-    if(active === 'boring') return 'boring';
-    return 'general';
-  }
-
-  function syncHelp(forceOpen){
-    const mode = currentHelpMode();
-    if(typeof window.setHelpMode === 'function') window.setHelpMode(mode);
-    if(typeof window.setHelpContent === 'function') window.setHelpContent(mode);
-    if(typeof window.updateHelpButtonLabel === 'function') window.updateHelpButtonLabel(mode);
-    const btn = $('reopenIntro');
-    if(btn){
-      const labels = {general:'How to Use', boring:'How to Use: Boring Header', sample:'How to Use: Add Sample', shelby:'How to Use: Add Shelby', casing:'How to Use: Edit Casing', review:'How to Use: Review'};
-      btn.textContent = labels[mode] || 'How to Use';
-    }
-    if(forceOpen) $('introOverlay')?.classList.add('active');
-  }
-
-  window.addEventListener('DOMContentLoaded', ()=>{
-    if(typeof showScreen === 'function'){
-      const origShowScreen2 = showScreen;
-      showScreen = function(id){
-        const result = origShowScreen2(id);
-        setTimeout(()=>syncHelp(false), 0);
-        return result;
-      };
-      window.showScreen = showScreen;
-    }
-
-    if(typeof window.startSample === 'function'){
-      const origStartSample = window.startSample;
-      window.startSample = function(){
-        const result = origStartSample.apply(this, arguments);
-        setTimeout(()=>syncHelp(false), 0);
-        return result;
-      };
-    }
-
-    if(typeof window.startShelby === 'function'){
-      const origStartShelby = window.startShelby;
-      window.startShelby = function(){
-        const result = origStartShelby.apply(this, arguments);
-        setTimeout(()=>syncHelp(false), 0);
-        return result;
-      };
-    }
-
-    if(typeof window.openReview === 'function'){
-      const origOpenReview = window.openReview;
-      window.openReview = function(){
-        const result = origOpenReview.apply(this, arguments);
-        setTimeout(()=>syncHelp(false), 0);
-        return result;
-      };
-    }
-
-    if(typeof window.renderCasingEditor === 'function'){
-      const origRenderCasingEditor = window.renderCasingEditor;
-      window.renderCasingEditor = function(){
-        const result = origRenderCasingEditor.apply(this, arguments);
-        setTimeout(()=>syncHelp(false), 0);
-        return result;
-      };
-    }
-
-    const btn = $('reopenIntro');
-    if(btn){
-      const newBtn = btn.cloneNode(true);
-      btn.parentNode.replaceChild(newBtn, btn);
-      newBtn.addEventListener('click', (e)=>{
-        e.preventDefault();
-        syncHelp(true);
-      });
-    }
-
-    const observer = new MutationObserver(()=> syncHelp(false));
-    document.querySelectorAll('.screen').forEach(s=> observer.observe(s,{attributes:true, attributeFilter:['class']}));
-
-    syncHelp(false);
-  });
-
-  window.setHelpContent = window.setHelpContent || function(){};
-  window.updateHelpButtonLabel = window.updateHelpButtonLabel || function(){};
-})();
-</script>
 
 
-<script>
-(function(){
-  const HELP_DATA = {
-    general: {
-      title: 'Welcome to GeoLogger v0.96',
-      subtitle: 'This app saves everything you enter into the boring record and uses that saved information to build review screens, photo logs, and exports.',
-      boxes: [
-        ['What gets reported','Every field you enter becomes part of the saved record: header info, samples, Shelby tubes, casing, remarks, photos, and times.'],
-        ['Automatic progress','As you save each step, the boring updates. The home screen and review/export screens use the saved data.'],
-        ['Basic workflow','Start Report → create a boring → fill Boring Header → Add Sample / Add Shelby / Edit Casing → Review → Save & Export.'],
-        ['Navigation','Use Back to return to the previous step. Save before leaving a step so your progress stays with that boring.']
-      ]
-    },
-    boring: {
-      title: 'Boring Header: what to do here',
-      subtitle: 'Fill out the boring information first. This header controls what gets reported in the field log and review screen.',
-      boxes: [
-        ['Required basics','Enter Point ID, Date, Time Started, driller/helper/inspector, rig info, and hole depth.'],
-        ['General remarks','Use the orange remark buttons for common remarks. Use Additional Remarks only for custom text that is not one of the preset buttons.'],
-        ['Automatic times','Time Started and Time Finished auto-fill, but you can edit them here or in Review.'],
-        ['Next step','After the header is saved, use Add Sample, Add Shelby, or Edit Casing to keep building the boring.']
-      ]
-    },
-    sample: {
-      title: 'Add Sample: how to use this step',
-      subtitle: 'This step builds a regular sample record. The sample information you save here is used in review, exports, and photo logs.',
-      boxes: [
-        ['Start here','Confirm sample number, top depth, and bottom depth first.'],
-        ['Work through the steps','Use Next and Back to move through blow counts, soil description, moisture/modifiers, photos, and finish details.'],
-        ['Photos','Add photos to this sample. Crop/Delete only changes the photo for this sample.'],
-        ['Finish','When the sample is complete, press Save Sample. Then return to the boring or add another sample.']
-      ]
-    },
-    shelby: {
-      title: 'Add Shelby: how to use this step',
-      subtitle: 'This step creates a Shelby tube entry. Shelby entries still save into the boring and show up in review/export.',
-      boxes: [
-        ['Start here','Check the Shelby number and depth range first.'],
-        ['Description','Confirm the soil/material description and any recovery or PP values that apply.'],
-        ['Photos','Add the Shelby photos for this entry. Crop/Delete only changes the photo for this Shelby entry.'],
-        ['Finish','Press Save Sample when done. Then return to the boring or continue with the next item.']
-      ]
-    },
-    casing: {
-      title: 'Edit Casing: how to use this step',
-      subtitle: 'Use this screen to build the casing record for the boring. Saved casing entries become part of the export.',
-      boxes: [
-        ['Enter depth and blows','Set the start depth and use the interval buttons or manual total blows.'],
-        ['Add each entry','Press Add Casing Entry for each casing line you want saved.'],
-        ['Check the list','Review the saved casing entries before you leave this screen.'],
-        ['Finish','Press Save Casing to keep the casing record with this boring.']
-      ]
-    },
-    review: {
-      title: 'Review & Export: final check',
-      subtitle: 'Review shows what will be reported from the saved boring. You can still go back, fix something, and return before exporting.',
-      boxes: [
-        ['Times','Check Date, Time Started, and Time Finished. Use current time for finish if needed, or edit them manually.'],
-        ['Original vs Cropped','Original photo log uses the original photos. Cropped photo log uses edited/cropped photos where available.'],
-        ['Go back if needed','If a header, sample, Shelby entry, casing line, or photo needs changes, use Back, fix it, save, and return here.'],
-        ['Finish','Use Save & Export when the boring is ready.']
-      ]
-    }
-  };
 
-  function byId(id){ return document.getElementById(id); }
 
-  function detectMode(){
-    const btnText = (byId('reopenIntro')?.textContent || '').toLowerCase();
-    if(btnText.includes('add shelby')) return 'shelby';
-    if(btnText.includes('add sample')) return 'sample';
-    if(btnText.includes('edit casing')) return 'casing';
-    if(btnText.includes('review')) return 'review';
-    if(btnText.includes('boring header')) return 'boring';
 
-    const active = document.querySelector('.screen.active')?.id || '';
-    if(active === 'sample'){
-      const sample = window.currentSample || (typeof currentSample !== 'undefined' ? currentSample : null);
-      const num = String(sample?.number || '').trim();
-      if(/^u-/i.test(num)) return 'shelby';
-      return 'sample';
-    }
-    if(active === 'casing') return 'casing';
-    if(active === 'review') return 'review';
-    if(active === 'boring') return 'boring';
-    return 'general';
-  }
 
-  function renderHelp(mode){
-    const data = HELP_DATA[mode] || HELP_DATA.general;
-    if(byId('introTitle')) byId('introTitle').textContent = data.title;
-    if(byId('introSubtitle')) byId('introSubtitle').textContent = data.subtitle;
-    if(byId('introGrid')) byId('introGrid').innerHTML = data.boxes.map(([h,p]) => '<div class="intro-box"><h5>'+h+'</h5><p>'+p+'</p></div>').join('');
-    return mode;
-  }
 
-  function showDynamicHelp(e){
-    if(e){ e.preventDefault(); e.stopImmediatePropagation(); }
-    const mode = renderHelp(detectMode());
-    const overlay = byId('introOverlay');
-    if(overlay) overlay.classList.add('active');
-    window.helpMode = mode;
-    return false;
-  }
 
-  function install(){
-    const btn = byId('reopenIntro');
-    if(btn){
-      const fresh = btn.cloneNode(true);
-      btn.parentNode.replaceChild(fresh, btn);
-      fresh.addEventListener('click', showDynamicHelp, true);
-    }
-    window.showDynamicHelp = showDynamicHelp;
-    window.renderHelpForCurrentScreen = function(){ renderHelp(detectMode()); };
-  }
 
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', install);
-  } else {
-    install();
-  }
-})();
-</script>
-
-<script>
-(function(){
-  function byId(id){ return document.getElementById(id); }
-  const HELP = {
-    general: {
-      title: 'Welcome to GeoLogger v0.96',
-      subtitle: 'This app saves what you enter and uses it to build review screens, photo logs, and exports.',
-      boxes: [
-        ['What gets reported','Every field you enter becomes part of the saved boring record: header info, samples, Shelby tubes, casing, remarks, photos, and times.'],
-        ['Automatic progress','As you save each step, the boring updates. The home screen and review/export screens use the saved data.'],
-        ['Basic workflow','Start Report → create a boring → fill Boring Header → Add Sample / Add Shelby / Edit Casing → Review → Save & Export.'],
-        ['Navigation','Use Back to return to the previous step. Save before leaving a step so your progress stays with that boring.']
-      ]
-    },
-    boring: {
-      title: 'Boring Header: what to do here',
-      subtitle: 'Fill out the boring information first. This controls what gets reported in the field log and review screen.',
-      boxes: [
-        ['Required basics','Enter Point ID, Date, Time Started, driller/helper/inspector, rig info, and hole depth.'],
-        ['General remarks','Use the orange remark buttons for common remarks. Use Additional Remarks only for custom text that is not one of the preset buttons.'],
-        ['Automatic times','Time Started and Time Finished auto-fill, but you can edit them here or in Review.'],
-        ['Next step','After the header is saved, use Add Sample, Add Shelby, or Edit Casing to keep building the boring.']
-      ]
-    },
-    sample: {
-      title: 'Add Sample: how to use this step',
-      subtitle: 'This step builds a regular sample record used in review, exports, and photo logs.',
-      boxes: [
-        ['Start here','Confirm sample number, top depth, and bottom depth first.'],
-        ['Work through the steps','Use Next and Back to move through blow counts, soil description, moisture/modifiers, photos, and finish details.'],
-        ['Photos','Add photos to this sample. Crop/Delete only changes the photo for this sample.'],
-        ['Finish','When the sample is complete, press Save Sample. Then return to the boring or add another sample.']
-      ]
-    },
-    shelby: {
-      title: 'Add Shelby: how to use this step',
-      subtitle: 'This step creates a Shelby tube entry that saves into the boring and shows up in review/export.',
-      boxes: [
-        ['Start here','Check the Shelby number and depth range first.'],
-        ['Description','Confirm the soil/material description and any recovery or PP values that apply.'],
-        ['Photos','Add the Shelby photos for this entry. Crop/Delete only changes the photo for this Shelby entry.'],
-        ['Finish','Press Save Sample when done. Then return to the boring or continue with the next item.']
-      ]
-    },
-    casing: {
-      title: 'Edit Casing: how to use this step',
-      subtitle: 'Use this screen to build the casing record for the boring.',
-      boxes: [
-        ['Enter depth and blows','Set the start depth and use the interval buttons or manual total blows.'],
-        ['Add each entry','Press Add Casing Entry for each casing line you want saved.'],
-        ['Check the list','Review the saved casing entries before you leave this screen.'],
-        ['Finish','Press Save Casing to keep the casing record with this boring.']
-      ]
-    },
-    review: {
-      title: 'Review & Export: final check',
-      subtitle: 'Review shows what will be reported from the saved boring. You can still go back, fix something, and return before exporting.',
-      boxes: [
-        ['Times','Check Date, Time Started, and Time Finished. Use current time for finish if needed, or edit them manually.'],
-        ['Original vs Cropped','Original photo log uses the original photos. Cropped photo log uses edited/cropped photos where available.'],
-        ['Go back if needed','If a header, sample, Shelby entry, casing line, or photo needs changes, use Back, fix it, save, and return here.'],
-        ['Finish','Use Save & Export when the boring is ready.']
-      ]
-    }
-  };
-
-  function detectMode(){
-    const active = document.querySelector('.screen.active')?.id || '';
-    if(active === 'sample'){
-      try {
-        const sample = window.currentSample || (typeof currentSample !== 'undefined' ? currentSample : null);
-        const num = String(sample?.number || byId('sampleNumber')?.value || byId('sampleTitle')?.textContent || '').trim();
-        if(/^u-/i.test(num) || /shelby/i.test(num)) return 'shelby';
-      } catch(e) {}
-      return 'sample';
-    }
-    if(active === 'casing') return 'casing';
-    if(active === 'review') return 'review';
-    if(active === 'boring') return 'boring';
-    return 'general';
-  }
-
-  function render(mode){
-    const d = HELP[mode] || HELP.general;
-    const title = byId('introTitle');
-    const subtitle = byId('introSubtitle');
-    const grid = byId('introGrid');
-    if(title) title.textContent = d.title;
-    if(subtitle) subtitle.textContent = d.subtitle;
-    if(grid) grid.innerHTML = d.boxes.map(([h,p]) => `<div class="intro-box"><h5>${h}</h5><p>${p}</p></div>`).join('');
-  }
-
-  function refreshButton(){
-    const mode = detectMode();
-    const btn = byId('reopenIntro');
-    if(btn){
-      const labels = {general:'How to Use', boring:'How to Use: Boring Header', sample:'How to Use: Add Sample', shelby:'How to Use: Add Shelby', casing:'How to Use: Edit Casing', review:'How to Use: Review'};
-      btn.textContent = labels[mode] || 'How to Use';
-    }
-    return mode;
-  }
-
-  function openDynamicHelp(ev){
-    if(ev){ ev.preventDefault(); ev.stopPropagation(); }
-    const mode = refreshButton();
-    render(mode);
-    byId('introOverlay')?.classList.add('active');
-    return false;
-  }
-
-  function install(){
-    const btn = byId('reopenIntro');
-    if(btn){
-      btn.onclick = openDynamicHelp;
-      btn.addEventListener('click', openDynamicHelp, true);
-    }
-    const observer = new MutationObserver(() => { refreshButton(); });
-    document.querySelectorAll('.screen').forEach(el => observer.observe(el, {attributes:true, attributeFilter:['class']}));
-    refreshButton();
-    window.openDynamicHelp = openDynamicHelp;
-  }
-
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install);
-  else install();
-})();
-</script>
-
-<script>
-(function(){
-  function $(id){ return document.getElementById(id); }
-  const SCREEN_HELP = {
-    general: {
-      title: 'Welcome to GeoLogger v0.96',
-      subtitle: 'This app saves everything you enter into the boring record and uses that saved information to build review screens, photo logs, and exports.',
-      boxes: [
-        ['What gets reported','Every field you enter becomes part of the saved record: header info, samples, Shelby tubes, casing, remarks, photos, and times.'],
-        ['Automatic progress','As you save each step, the boring updates. The home screen and review/export screens use the saved data.'],
-        ['Basic workflow','Start Report → create a boring → fill Boring Header → Add Sample / Add Shelby / Edit Casing → Review → Save & Export.'],
-        ['Navigation','Use Back to return to the previous step. Save before leaving a step so your progress stays with that boring.']
-      ]
-    },
-    boring: {
-      title: 'Boring Header: what to do here',
-      subtitle: 'Fill out the boring information first. This header controls what gets reported in the field log and review screen.',
-      boxes: [
-        ['Required basics','Enter Point ID, Date, Time Started, driller/helper/inspector, rig info, and hole depth.'],
-        ['General remarks','Use the orange remark buttons for common remarks. Use Additional Remarks only for custom text that is not one of the preset buttons.'],
-        ['Automatic times','Time Started and Time Finished auto-fill, but you can edit them here or in Review.'],
-        ['Next step','After the header is saved, use Add Sample, Add Shelby, or Edit Casing to keep building the boring.']
-      ]
-    },
-    sample: {
-      title: 'Add Sample: how to use this step',
-      subtitle: 'This step builds a regular sample record. The sample information you save here is used in review, exports, and photo logs.',
-      boxes: [
-        ['Start here','Confirm sample number, top depth, and bottom depth first.'],
-        ['Work through the steps','Use Next and Back to move through blow counts, soil description, moisture/modifiers, photos, and finish details.'],
-        ['Photos','Add photos to this sample. Crop/Delete only changes the photo for this sample.'],
-        ['Finish','When the sample is complete, press Save Sample. Then return to the boring or add another sample.']
-      ]
-    },
-    shelby: {
-      title: 'Add Shelby: how to use this step',
-      subtitle: 'This step creates a Shelby tube entry. Shelby entries still save into the boring and show up in review/export.',
-      boxes: [
-        ['Start here','Check the Shelby number and depth range first.'],
-        ['Description','Confirm the soil/material description and any recovery or PP values that apply.'],
-        ['Photos','Add the Shelby photos for this entry. Crop/Delete only changes the photo for this Shelby entry.'],
-        ['Finish','Press Save Sample when done. Then return to the boring or continue with the next item.']
-      ]
-    },
-    casing: {
-      title: 'Edit Casing: how to use this step',
-      subtitle: 'Use this screen to build the casing record for the boring. Saved casing entries become part of the export.',
-      boxes: [
-        ['Enter depth and blows','Set the start depth and use the interval buttons or manual total blows.'],
-        ['Add each entry','Press Add / Update Entry for each casing line you want saved.'],
-        ['Check the list','Review the saved casing entries before you leave this screen.'],
-        ['Finish','Press Save Casing to keep the casing record with this boring.']
-      ]
-    },
-    review: {
-      title: 'Review & Export: final check',
-      subtitle: 'Review shows what will be reported from the saved boring. You can still go back, fix something, and return before exporting.',
-      boxes: [
-        ['Times','Check Date, Time Started, and Time Finished. Use current time for finish if needed, or edit them manually.'],
-        ['Original vs Cropped','Original photo log uses the original photos. Cropped photo log uses edited/cropped photos where available.'],
-        ['Go back if needed','If a header, sample, Shelby entry, casing line, or photo needs changes, use Back, fix it, save, and return here.'],
-        ['Finish','Use Save & Export when the boring is ready.']
-      ]
-    }
-  };
-
-  function renderHelp(mode){
-    const data = SCREEN_HELP[mode] || SCREEN_HELP.general;
-    const title = $('introTitle');
-    const subtitle = $('introSubtitle');
-    const grid = $('introGrid');
-    if(title) title.textContent = data.title;
-    if(subtitle) subtitle.textContent = data.subtitle;
-    if(grid) grid.innerHTML = data.boxes.map(function(pair){
-      return '<div class="intro-box"><h5>'+pair[0]+'</h5><p>'+pair[1]+'</p></div>';
-    }).join('');
-    $('introOverlay')?.classList.add('active');
-  }
-
-  function helpBtn(label, modeGetter){
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'gl-screen-help-btn';
-    btn.textContent = label;
-    btn.addEventListener('click', function(e){
-      e.preventDefault();
-      const mode = typeof modeGetter === 'function' ? modeGetter() : modeGetter;
-      renderHelp(mode);
-    });
-    return btn;
-  }
-
-  function currentSampleHelpMode(){
-    try {
-      const n = String((typeof currentSample !== 'undefined' && currentSample ? currentSample.number : '') || (window.currentSample ? window.currentSample.number : '') || '');
-      return /^U-/i.test(n) ? 'shelby' : 'sample';
-    } catch(e) {
-      return 'sample';
-    }
-  }
-
-  function attachButtons(){
-    const topBtn = $('reopenIntro');
-    if(topBtn){
-      topBtn.onclick = function(e){ e.preventDefault(); renderHelp('general'); };
-      topBtn.textContent = 'How to Use';
-    }
-
-    const boringRow = document.querySelector('#boring .row.between');
-    if(boringRow && !$('boringScreenHelp')){
-      const wrap = boringRow.lastElementChild || boringRow;
-      wrap.appendChild(helpBtn('How to Use: Boring Header', 'boring')).id = 'boringScreenHelp';
-    }
-
-    const reviewRow = document.querySelector('#review .row.between');
-    if(reviewRow && !$('reviewScreenHelp')){
-      reviewRow.appendChild(helpBtn('How to Use: Review', 'review')).id = 'reviewScreenHelp';
-    }
-
-    const casingRow = document.querySelector('#casing .row.between');
-    if(casingRow && !$('casingScreenHelp')){
-      casingRow.appendChild(helpBtn('How to Use: Edit Casing', 'casing')).id = 'casingScreenHelp';
-    }
-
-    const sampleRow = document.querySelector('#sample .row.between');
-    if(sampleRow && !$('sampleScreenHelp')){
-      const btn = helpBtn('How to Use: Add Sample', currentSampleHelpMode);
-      btn.id = 'sampleScreenHelp';
-      sampleRow.appendChild(btn);
-    }
-  }
-
-  function refreshSampleButton(){
-    const btn = $('sampleScreenHelp');
-    if(!btn) return;
-    const mode = currentSampleHelpMode();
-    btn.textContent = mode === 'shelby' ? 'How to Use: Add Shelby' : 'How to Use: Add Sample';
-  }
-
-  window.addEventListener('DOMContentLoaded', function(){
-    attachButtons();
-    refreshSampleButton();
-
-    if(typeof window.startSample === 'function'){
-      const orig = window.startSample;
-      window.startSample = function(){ const r = orig.apply(this, arguments); setTimeout(refreshSampleButton, 0); return r; };
-    }
-    if(typeof window.startShelby === 'function'){
-      const orig = window.startShelby;
-      window.startShelby = function(){ const r = orig.apply(this, arguments); setTimeout(refreshSampleButton, 0); return r; };
-    }
-    if(typeof window.openSample === 'function'){
-      const orig = window.openSample;
-      window.openSample = function(){ const r = orig.apply(this, arguments); setTimeout(refreshSampleButton, 0); return r; };
-    }
-  });
-})();
-</script>
 <style>
 .gl-screen-help-btn{margin-left:8px;background:#2a221b;color:#f0ede6;border:1px solid #6a4a26;border-radius:10px;padding:8px 10px;font-weight:700}
 .gl-screen-help-btn:hover{filter:brightness(1.08)}
 </style>
 
 
-<script>
-(function(){
-  const HELP_DATA = {
-    general: {
-      title: 'How to use this app',
-      subtitle: 'This app saves what you enter and builds review/export files from it.',
-      boxes: [
-        ['What gets saved','Every field you enter becomes part of the boring record. That includes header info, samples, casing, remarks, and photos.'],
-        ['Basic workflow','Start Report → create/select a boring → fill Boring Header → add Sample/Shelby/Casing/Photos → Review → Save & Export.'],
-        ['Automatic progress','As you save each step, the boring stays on the home screen and the app uses that saved data for exports.'],
-        ['Navigation','Use Back to move around, but save before leaving a step so your newest edits stay attached to the boring.']
-      ]
-    },
-    boring: {
-      title: 'Boring Header: how to use',
-      subtitle: 'Fill the main boring information first. This is the base record for the rest of the workflow.',
-      boxes: [
-        ['What to enter','Fill Point ID, date, time started, location/station, hole depth, driller/helper/inspector, and rig info.'],
-        ['Automatic times','Time Started is auto-filled when a boring is created. You can edit it here if needed.'],
-        ['Before moving on','Save the header before pressing Add Sample, Add Shelby, Edit Casing, or Review.'],
-        ['Why it matters','This header information carries into saved borings, review, and exports.']
-      ]
-    },
-    sample: {
-      title: 'Add Sample: how to use',
-      subtitle: 'Use this step for regular split-spoon or grab samples.',
-      boxes: [
-        ['What to fill out','Enter sample number, top and bottom depth, recovery, blows, and soil/material description.'],
-        ['Remarks and photos','Select any matching preset remarks, add extra notes only if needed, and attach sample photos.'],
-        ['Editing photos','Use Crop/Delete on the photo if needed. Original and cropped photo logs can be exported later.'],
-        ['When done','Save the sample so it is added to the boring record, then add another sample or go back to Review.']
-      ]
-    },
-    shelby: {
-      title: 'Add Shelby: how to use',
-      subtitle: 'Use this step when the sample is an undisturbed Shelby tube sample.',
-      boxes: [
-        ['What is different','Shelby entries are for undisturbed tube samples, not regular split-spoon entries.'],
-        ['What to fill out','Enter the sample number, depths, recovery/length, and soil description just like the field record requires.'],
-        ['Photos and remarks','Attach the correct Shelby photo if you have one and use remarks only if they truly apply to this sample.'],
-        ['When done','Save the Shelby entry so it becomes part of the boring before moving on.']
-      ]
-    },
-    casing: {
-      title: 'Edit Casing: how to use',
-      subtitle: 'Track casing intervals used for the boring.',
-      boxes: [
-        ['What to enter','Add casing start/end depths and any other casing details your workflow requires.'],
-        ['Multiple entries','If there were multiple casing intervals, enter each one carefully and save them to the boring.'],
-        ['Why save matters','Saved casing information appears in Review and becomes part of the report record.'],
-        ['Before leaving','Save casing changes before going back or opening Review.']
-      ]
-    },
-    review: {
-      title: 'Review and Export: how to use',
-      subtitle: 'This is the final check screen before export.',
-      boxes: [
-        ['What to check','Review header info, samples, casing, remarks, and photos. Make sure the boring looks complete and correct.'],
-        ['Time Finished','Time Finished can auto-fill here. You can also edit it before export if the finish time needs adjustment.'],
-        ['Photo logs','Export Original Photo Log for the untouched images or Cropped Photo Log for edited images.'],
-        ['Save and export','Use Save & Export after the boring is reviewed so the latest version is kept and the export files generate from the saved record.']
-      ]
-    }
-  };
 
-  function detectMode(){
-    try {
-      if (typeof currentScreen !== 'undefined') {
-        if (currentScreen === 'review') return 'review';
-        if (currentScreen === 'settings' || currentScreen === 'boring') return 'boring';
-      }
-      const active = document.querySelector('.screen.active')?.id;
-      if (active === 'review') return 'review';
-      if (active === 'settings' || active === 'boring') return 'boring';
-      const title = (document.getElementById('sampleTitle')?.textContent || '').toLowerCase();
-      if (title.includes('shelby')) return 'shelby';
-      if (title.includes('sample')) return 'sample';
-      if (document.getElementById('sampleScreen')?.classList.contains('active')) return 'sample';
-      if (document.getElementById('casingScreen')?.classList.contains('active')) return 'casing';
-    } catch(e) {}
-    return 'general';
-  }
-
-  function renderScreenHelp(mode){
-    const data = HELP_DATA[mode] || HELP_DATA.general;
-    const title = document.getElementById('screenHelpTitle');
-    const subtitle = document.getElementById('screenHelpSubtitle');
-    const grid = document.getElementById('screenHelpGrid');
-    if (!title || !subtitle || !grid) return;
-    title.textContent = data.title;
-    subtitle.textContent = data.subtitle;
-    grid.innerHTML = data.boxes.map(([h,p]) => `<div class="intro-box"><h5>${h}</h5><p>${p}</p></div>`).join('');
-  }
-
-  function showScreenHelp(mode){
-    renderScreenHelp(mode || detectMode());
-    const overlay = document.getElementById('screenHelpOverlay');
-    if (overlay) overlay.style.display = 'flex';
-  }
-
-  function hideScreenHelp(){
-    const overlay = document.getElementById('screenHelpOverlay');
-    if (overlay) overlay.style.display = 'none';
-  }
-
-  function refreshHelpButton(){
-    const mode = detectMode();
-    const labels = {general:'How to Use', boring:'How to Use: Boring Header', sample:'How to Use: Add Sample', shelby:'How to Use: Add Shelby', casing:'How to Use: Edit Casing', review:'How to Use: Review'};
-    const btn = document.getElementById('reopenIntro');
-    if (btn) btn.textContent = labels[mode] || 'How to Use';
-  }
-
-  window.showScreenHelp = showScreenHelp;
-  window.refreshHelpButton = refreshHelpButton;
-
-  document.addEventListener('click', function(e){
-    const t = e.target;
-    if (!t) return;
-    if (t.id === 'reopenIntro') { e.preventDefault(); e.stopPropagation(); showScreenHelp(detectMode()); }
-    if (t.id === 'closeScreenHelp' || t.id === 'dismissScreenHelp') { e.preventDefault(); hideScreenHelp(); }
-    if (t.id === 'closeIntro' || t.id === 'dismissIntro') {
-      const welcome = document.getElementById('introOverlay');
-      if (welcome) welcome.classList.remove('active');
-    }
-  }, true);
-
-  const ids=['openSettings','homeFromSettings','addSample','addSampleInline','addShelby','editCasing','saveExit','backToHome'];
-  ids.forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.addEventListener('click', ()=>setTimeout(refreshHelpButton,50), true);
-  });
-  const observer=new MutationObserver(()=>refreshHelpButton());
-  observer.observe(document.body,{subtree:true,attributes:true,attributeFilter:['class']});
-  setTimeout(refreshHelpButton,100);
-})();
-</script>
 
 
 <script>
@@ -4482,6 +3623,618 @@ function openPreciseCropper(opts){
     }
     return await __oldExportWorkbookFile(wb, filename);
   };
+})();
+</script>
+
+
+<script>
+(function(){
+  function compactDepth(v){
+    const n = Number(v);
+    if(!Number.isFinite(n)) return '';
+    return Number.isInteger(n) ? String(n) : String(n).replace(/\.0+$/,'').replace(/(\.\d*?)0+$/,'$1');
+  }
+  function geothermEnabled(header){
+    const h = header || {};
+    return h.logType === 'geotherm' || !!h.geothermContinuous;
+  }
+  function getGeothermRowsFromDom(){
+    return Array.from(document.querySelectorAll('#geothermSamplesBody .gt-row')).map(row => ({
+      label: String(row.querySelector('.gt-label')?.value || '').trim(),
+      top: row.querySelector('.gt-top')?.value === '' ? null : Number(row.querySelector('.gt-top')?.value),
+      bottom: row.querySelector('.gt-bottom')?.value === '' ? null : Number(row.querySelector('.gt-bottom')?.value)
+    })).filter(r => r.label || Number.isFinite(r.top) || Number.isFinite(r.bottom));
+  }
+  function geothermHeaderFromDom(){
+    return {
+      geothermContinuous: document.getElementById('bhLogType')?.value === 'geotherm',
+      geothermStartDepth: document.getElementById('bhGeothermStartDepth')?.value === '' ? null : Number(document.getElementById('bhGeothermStartDepth')?.value),
+      geothermInterval: document.getElementById('bhGeothermInterval')?.value === '' ? null : Number(document.getElementById('bhGeothermInterval')?.value),
+      geothermGtSamples: getGeothermRowsFromDom()
+    };
+  }
+  function composeGeothermRemarkLines(b){
+    const h = (b && b.header) || {};
+    const out = [];
+    if(geothermEnabled(h)){
+      const interval = Number(h.geothermInterval);
+      const standards = ((b && b.samples) || [])
+        .map(s => window.normalizeSample ? window.normalizeSample(s) : s)
+        .filter(s => (s.sampleType || (window.inferSampleType ? window.inferSampleType(s) : 'standard')) === 'standard')
+        .sort((a,b)=>Number(a.topDepth)-Number(b.topDepth));
+      if(standards.length){
+        const top = Number(standards[0].topDepth);
+        const bot = Number(standards[standards.length-1].bottomDepth);
+        if(Number.isFinite(top) && Number.isFinite(bot)) out.push(`Geotherm sample collected between ${compactDepth(top)}-${compactDepth(bot)} feet.`);
+      } else if(Number.isFinite(Number(h.geothermStartDepth)) && Number.isFinite(interval) && interval > 0){
+        const top = Number(h.geothermStartDepth);
+        out.push(`Geotherm sample collected between ${compactDepth(top)}-${compactDepth(top + interval)} feet.`);
+      }
+    }
+    (Array.isArray(h.geothermGtSamples) ? h.geothermGtSamples : []).forEach(row=>{
+      if(row.label && Number.isFinite(Number(row.top)) && Number.isFinite(Number(row.bottom))){
+        out.push(`${row.label}: ${compactDepth(row.top)}-${compactDepth(row.bottom)}ft`);
+      }
+    });
+    return out;
+  }
+  function mergeLines(baseText, extraLines){
+    const base = String(baseText || '').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+    extraLines.forEach(line=>{ if(line && !base.includes(line)) base.push(line); });
+    return base.join('\n');
+  }
+  function nextGtLabel(existing){
+    const rows = Array.isArray(existing) ? existing : [];
+    if(!rows.length) return 'GT-1A';
+    const last = String(rows[rows.length-1].label || 'GT-1A').toUpperCase();
+    const m = last.match(/^GT-(\d+)([A-Z])$/);
+    if(!m) return `GT-${rows.length+1}A`;
+    const num = Number(m[1]);
+    const code = m[2].charCodeAt(0);
+    return code < 90 ? `GT-${num}${String.fromCharCode(code+1)}` : `GT-${num+1}A`;
+  }
+  function renderGeothermRows(rows){
+    const body = document.getElementById('geothermSamplesBody');
+    if(!body) return;
+    const data = Array.isArray(rows) && rows.length ? rows : [{label:'GT-1A',top:null,bottom:null},{label:'GT-1B',top:null,bottom:null}];
+    body.innerHTML = data.map((row, idx)=>`<div class="gt-row" style="display:grid;grid-template-columns:1.2fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px">
+<label style="margin:0">Sample Label <input class="gt-label" value="${String(row.label||'').replace(/"/g,'&quot;')}" placeholder="GT-1A"></label>
+<label style="margin:0">Top (ft) <input class="gt-top" type="number" step="0.5" value="${row.top ?? ''}"></label>
+<label style="margin:0">Bottom (ft) <input class="gt-bottom" type="number" step="0.5" value="${row.bottom ?? ''}"></label>
+<button type="button" class="ghost gt-remove" data-idx="${idx}" style="height:40px">Delete</button>
+</div>`).join('');
+    body.querySelectorAll('.gt-remove').forEach(btn=>btn.onclick=()=>{
+      const rows = getGeothermRowsFromDom();
+      rows.splice(Number(btn.dataset.idx),1);
+      renderGeothermRows(rows);
+    });
+  }
+  function ensureGeothermUI(){
+    if(document.getElementById('geothermCard')) return;
+    const anchor = document.getElementById('wellFieldsCard');
+    if(!anchor) return;
+    anchor.insertAdjacentHTML('beforebegin', `
+      <div id="geothermCard" class="card help-card hidden" style="margin-top:12px">
+        <h4>Geotherm fields</h4>
+        <div class="guide-note">Use Geotherm as the log type for continuous standard sampling and geotherm remarks.</div>
+        <div class="grid2">
+          <label>Geotherm Start Depth <input id="bhGeothermStartDepth" type="number" step="0.5" placeholder="6"></label>
+          <label>Geotherm Interval (ft) <input id="bhGeothermInterval" type="number" step="0.5" placeholder="2"></label>
+        </div>
+        <div style="margin-top:12px">
+          <div style="font-size:13px;color:var(--muted);margin-bottom:6px">Geotherm sample intervals</div>
+          <div id="geothermSamplesBody"></div>
+          <button type="button" id="addGeothermSampleBtn" class="ghost">Add GT Sample</button>
+        </div>
+      </div>`);
+    document.getElementById('addGeothermSampleBtn').onclick = ()=>{
+      const rows = getGeothermRowsFromDom();
+      rows.push({label: nextGtLabel(rows), top:null, bottom:null});
+      renderGeothermRows(rows);
+    };
+    renderGeothermRows();
+  }
+
+  const __oldFillBoringForm = window.fillBoringForm;
+  window.fillBoringForm = function(){
+    const out = __oldFillBoringForm.apply(this, arguments);
+    ensureGeothermUI();
+    const h = (window.currentBoring && window.currentBoring.header) || {};
+    const setv = (id, val, fallback='') => { const el = document.getElementById(id); if(el) el.value = (val ?? fallback); };
+    setv('bhGeothermStartDepth', h.geothermStartDepth, '');
+    setv('bhGeothermInterval', h.geothermInterval, '2');
+    renderGeothermRows(h.geothermGtSamples);
+    updateWellFieldsVisibility();
+    return out;
+  };
+
+  const __oldCollectBoringForm = window.collectBoringForm;
+  window.collectBoringForm = function(){
+    ensureGeothermUI();
+    const out = __oldCollectBoringForm.apply(this, arguments);
+    if(window.currentBoring && window.currentBoring.header){
+      Object.assign(window.currentBoring.header, geothermHeaderFromDom());
+      window.currentBoring.header.generalRemarks = window.orderedRemarks();
+    }
+    return out;
+  };
+
+  const __oldOrderedRemarks = window.orderedRemarks;
+  window.orderedRemarks = function(){
+    const base = __oldOrderedRemarks.apply(this, arguments);
+    const header = Object.assign({}, (window.currentBoring && window.currentBoring.header) || {}, geothermHeaderFromDom(), { logType: document.getElementById('bhLogType')?.value || ((window.currentBoring && window.currentBoring.header && window.currentBoring.header.logType) || 'field') });
+    const boring = { header, samples: (window.currentBoring && window.currentBoring.samples) || [] };
+    return mergeLines(base, composeGeothermRemarkLines(boring));
+  };
+
+  const __oldNextSuggestion = window.nextSuggestion;
+  window.nextSuggestion = function(samples, sampleType='standard'){
+    const out = __oldNextSuggestion.apply(this, arguments);
+    const h = Object.assign({}, (window.currentBoring && window.currentBoring.header) || {}, geothermHeaderFromDom(), { logType: document.getElementById('bhLogType')?.value || ((window.currentBoring && window.currentBoring.header && window.currentBoring.header.logType) || 'field') });
+    if(sampleType === 'standard' && geothermEnabled(h)){
+      const interval = Number(h.geothermInterval);
+      const startDepth = Number(h.geothermStartDepth);
+      const normalized = (samples || []).map(s => window.normalizeSample ? window.normalizeSample(s) : s);
+      const standards = normalized.filter(s => (s.sampleType || (window.inferSampleType ? window.inferSampleType(s) : 'standard')) === 'standard');
+      const top = standards.length ? Math.max(...standards.map(s => Number(s.bottomDepth) || 0)) : (Number.isFinite(startDepth) ? startDepth : out.top);
+      out.top = top;
+      out.bottom = top + (Number.isFinite(interval) && interval > 0 ? interval : 2);
+    }
+    return out;
+  };
+
+  const __oldBuildWellRemarksList = window.buildWellRemarksList;
+  window.buildWellRemarksList = function(b){
+    const base = __oldBuildWellRemarksList.apply(this, arguments);
+    return mergeLines(base, composeGeothermRemarkLines(b));
+  };
+
+  const __oldBuildGintWorkbook = window.buildGintWorkbook;
+  window.buildGintWorkbook = function(borings, settings){
+    const patched = (borings || []).map(b => {
+      const clone = JSON.parse(JSON.stringify(b));
+      const lines = composeGeothermRemarkLines(clone);
+      clone.header = clone.header || {};
+      clone.header.generalRemarks = mergeLines(clone.header.generalRemarks || '', lines);
+      return clone;
+    });
+    return __oldBuildGintWorkbook.call(this, patched, settings);
+  };
+
+  const __oldUpdateWellFieldsVisibility = window.updateWellFieldsVisibility;
+  window.updateWellFieldsVisibility = function(){
+    if(typeof __oldUpdateWellFieldsVisibility === 'function') __oldUpdateWellFieldsVisibility.apply(this, arguments);
+    const logType = document.getElementById('bhLogType')?.value || (window.currentBoring?.header?.logType || 'field');
+    const geo = document.getElementById('geothermCard');
+    if(geo) geo.classList.toggle('hidden', logType !== 'geotherm');
+  };
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureGeothermUI);
+  else ensureGeothermUI();
+})();
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+(function(){
+  function splitLines(raw){ return String(raw||'').split(/\r?\n/).map(s=>String(s||'').trim()).filter(Boolean); }
+  function normalizeLine(line){ return String(line||'').replace(/^\s*\d+\s*[\.)-]?\s*/, '').trim(); }
+  function canon(line){ return normalizeLine(line).toLowerCase().replace(/cropped with asphalt/g,'patched with asphalt').replace(/[^a-z0-9]+/g,' ').trim(); }
+  function uniqueLines(){ const out=[]; for(const arg of arguments){ const arr=Array.isArray(arg)?arg:splitLines(arg); for(const raw of arr){ const line=normalizeLine(raw); if(line && !out.some(x=>canon(x)===canon(line))) out.push(line); } } return out; }
+  function compactDepth(v){ const n=Number(v); if(!Number.isFinite(n)) return ''; return Number.isInteger(n)?String(n):String(n).replace(/\.0+$/,'').replace(/(\.\d*?)0+$/,'$1'); }
+  function isWellLike(logType){ return ['well','well_geotherm','geotherm_well'].includes(String(logType||'').trim()); }
+  function isGeothermLike(logType){ return ['geotherm','well_geotherm','geotherm_well'].includes(String(logType||'').trim()); }
+
+  function ensureRemarkOptions(){
+    const needed = [
+      'Groundwater encountered during drilling.',
+      'Borehole backfilled with soil cuttings and grouted upon completion.',
+      'Borehole backfilled with grout and patched with asphalt upon completion.'
+    ];
+    const base = Array.isArray(window.REMARK_OPTIONS) ? window.REMARK_OPTIONS.slice() : [];
+    needed.forEach(opt=>{ if(!base.some(x=>canon(x)===canon(opt))) base.push(opt); });
+    window.REMARK_OPTIONS = base;
+  }
+
+  function ensureLogTypeOptions(){
+    const sel = document.getElementById('bhLogType');
+    if(!sel) return;
+    const opts = [
+      ['field','Field Boring'],
+      ['geotherm','Geotherm'],
+      ['well','Well Log'],
+      ['well_geotherm','Well Log + Geotherm']
+    ];
+    const current = sel.value || 'field';
+    sel.innerHTML='';
+    opts.forEach(([value,label])=>{
+      const opt=document.createElement('option');
+      opt.value=value; opt.textContent=label; if(value===current) opt.selected=true;
+      sel.appendChild(opt);
+    });
+  }
+
+  function cleanupWellDefaults(){
+    const grid = document.querySelector('#wellDefaultsCard .grid2');
+    if(!grid) return;
+    const seen = new Set();
+    Array.from(grid.children).forEach(label=>{
+      const key = String(label.textContent||'').replace(/\s+/g,' ').trim();
+      if(!key) return;
+      if(seen.has(key)) label.remove();
+      else seen.add(key);
+    });
+    const card = document.getElementById('wellFieldsCard');
+    if(card){
+      const defaults = new Set(['Datum','Drilling Method','Development Method','Casing Material','Riser Pipe','Screen Material','Screen Length (ft)','Grout','Seal','Screen Pack','Borehole Diameter']);
+      Array.from(card.querySelectorAll(':scope > .grid2 label')).forEach(label=>{
+        const text = String(label.textContent||'').replace(/\s+/g,' ').trim();
+        if(defaults.has(text)) label.remove();
+      });
+    }
+    const summary = document.querySelector('#wellDefaultsCard summary');
+    if(summary) summary.textContent = 'Hide Info';
+  }
+
+  function getGeothermRowsFromDom(){
+    return Array.from(document.querySelectorAll('#geothermSamplesBody .gt-row')).map(row => ({
+      label: String(row.querySelector('.gt-label')?.value || '').trim(),
+      top: row.querySelector('.gt-top')?.value === '' ? null : Number(row.querySelector('.gt-top')?.value),
+      bottom: row.querySelector('.gt-bottom')?.value === '' ? null : Number(row.querySelector('.gt-bottom')?.value)
+    })).filter(r => r.label || Number.isFinite(r.top) || Number.isFinite(r.bottom));
+  }
+
+  function currentHeaderFromDom(){
+    const h = Object.assign({}, (window.currentBoring && window.currentBoring.header) || {});
+    const v = id => document.getElementById(id)?.value;
+    h.logType = v('bhLogType') || h.logType || 'field';
+    h.mudDepth = v('bhMudDepth') === '' ? null : (v('bhMudDepth') ?? h.mudDepth ?? null);
+    h.latitude = v('bhLatitude') ?? h.latitude ?? '';
+    h.longitude = v('bhLongitude') ?? h.longitude ?? '';
+    h.gwDepth = v('bhGwDepth') === '' ? null : (v('bhGwDepth') ?? h.gwDepth ?? null);
+    h.gwDateTime = v('bhGwDateTime') ?? h.gwDateTime ?? '';
+    h.geothermContinuous = isGeothermLike(h.logType);
+    h.geothermStartDepth = v('bhGeothermStartDepth') === '' ? null : (v('bhGeothermStartDepth') != null ? Number(v('bhGeothermStartDepth')) : h.geothermStartDepth ?? null);
+    h.geothermInterval = v('bhGeothermInterval') === '' ? null : (v('bhGeothermInterval') != null ? Number(v('bhGeothermInterval')) : h.geothermInterval ?? 2);
+    h.geothermGtSamples = getGeothermRowsFromDom().length ? getGeothermRowsFromDom() : (Array.isArray(h.geothermGtSamples)?h.geothermGtSamples:[]);
+    h.wellRemarks = v('bhWellRemarks') ?? h.wellRemarks ?? '';
+    return h;
+  }
+
+  function structuredLine(line){
+    const s = normalizeLine(line);
+    return /^Introduced drilling fluid \(Bentonite\) at .+ feet\.?$/i.test(s)
+      || /^Groundwater encountered during drilling\.?$/i.test(s)
+      || /^Latitude:\s*.+\s+Longitude:\s*.+$/i.test(s)
+      || /^Geotherm sample collected between .+ feet\.?$/i.test(s)
+      || /^GT-[^:]+:\s*.+ft$/i.test(s);
+  }
+
+  function structuredLines(header, samples){
+    const h = header || {};
+    const out=[];
+    if(String(h.mudDepth ?? '').trim() !== '') out.push(`Introduced drilling fluid (Bentonite) at ${h.mudDepth} feet.`);
+    if((h.gwDepth !== null && h.gwDepth !== '' && h.gwDepth !== undefined) || String(h.gwDateTime||'').trim()) out.push('Groundwater encountered during drilling.');
+    out.push(`Latitude: ${String(h.latitude || '').trim() || 'XX'}  Longitude: ${String(h.longitude || '').trim() || 'XX'}`);
+    if(isGeothermLike(h.logType) || h.geothermContinuous){
+      const standards = (samples || []).map(s => window.normalizeSample ? window.normalizeSample(s) : s)
+        .filter(s => (s.sampleType || (window.inferSampleType ? window.inferSampleType(s) : 'standard')) === 'standard')
+        .sort((a,b)=>Number(a.topDepth)-Number(b.topDepth));
+      if(standards.length){
+        const top = Number(standards[0].topDepth), bottom = Number(standards[standards.length-1].bottomDepth);
+        if(Number.isFinite(top) && Number.isFinite(bottom)) out.push(`Geotherm sample collected between ${compactDepth(top)}-${compactDepth(bottom)} feet.`);
+      } else if(Number.isFinite(Number(h.geothermStartDepth)) && Number.isFinite(Number(h.geothermInterval || 2))){
+        const start = Number(h.geothermStartDepth), interval = Number(h.geothermInterval || 2);
+        out.push(`Geotherm sample collected between ${compactDepth(start)}-${compactDepth(start + interval)} feet.`);
+      }
+      (Array.isArray(h.geothermGtSamples) ? h.geothermGtSamples : []).forEach(row=>{
+        const label=String(row.label||'').trim(), top=Number(row.top), bottom=Number(row.bottom);
+        if(label && Number.isFinite(top) && Number.isFinite(bottom)) out.push(`${label}: ${compactDepth(top)}-${compactDepth(bottom)}ft`);
+      });
+    }
+    return uniqueLines(out);
+  }
+
+  function parseSavedRemarks(raw){
+    ensureRemarkOptions();
+    const optionMap = Object.fromEntries((window.REMARK_OPTIONS || []).map(opt => [canon(opt), opt]));
+    const selected=[], manual=[];
+    splitLines(raw).forEach(lineRaw=>{
+      const line=normalizeLine(lineRaw);
+      if(!line || structuredLine(line)) return;
+      const opt=optionMap[canon(line)];
+      if(opt){ if(!selected.some(x=>canon(x)===canon(opt))) selected.push(opt); }
+      else if(!manual.some(x=>canon(x)===canon(line))) manual.push(line);
+    });
+    return { selected, manual };
+  }
+
+  function renderRemarkButtonsStable(){
+    ensureRemarkOptions();
+    const wrap = document.getElementById('remarkButtons');
+    if(!wrap) return;
+    const selected = Array.isArray(window.remarkSelections) ? window.remarkSelections : [];
+    wrap.innerHTML = '';
+    (window.REMARK_OPTIONS || []).forEach(opt=>{
+      const btn=document.createElement('button');
+      btn.type='button';
+      btn.className='choice' + (selected.some(x=>canon(x)===canon(opt)) ? ' selected' : '');
+      btn.textContent=opt;
+      btn.onclick=()=>{
+        const current = Array.isArray(window.remarkSelections) ? window.remarkSelections.slice() : [];
+        const exists = current.some(x=>canon(x)===canon(opt));
+        window.remarkSelections = exists ? current.filter(x=>canon(x)!==canon(opt)) : [...current, opt];
+        renderRemarkButtonsStable();
+      };
+      wrap.appendChild(btn);
+    });
+  }
+
+  function selectedRemarkTexts(){
+    const domSelected=[];
+    document.querySelectorAll('#remarkButtons .choice.selected').forEach(btn=>{
+      const txt = String(btn.textContent || '').trim();
+      if(txt && !domSelected.some(x=>canon(x)===canon(txt))) domSelected.push(txt);
+    });
+    return domSelected;
+  }
+
+  function orderedRemarksStable(){
+    ensureRemarkOptions();
+    const picked = selectedRemarkTexts();
+    if(picked.length || !Array.isArray(window.remarkSelections)) window.remarkSelections = picked.length ? picked.slice() : (Array.isArray(window.remarkSelections) ? window.remarkSelections : []);
+    const selected = (Array.isArray(window.remarkSelections) ? window.remarkSelections : []).filter(Boolean);
+    const manual = splitLines(document.getElementById('bhRemarks')?.value || '');
+    const header = currentHeaderFromDom();
+    const samples = (window.currentBoring && window.currentBoring.samples) || [];
+    return uniqueLines(selected, manual, structuredLines(header, samples)).join('\n');
+  }
+
+  function syncRemarkUiFromSaved(){
+    const saved = window.currentBoring?.header?.generalRemarks || '';
+    const state = parseSavedRemarks(saved);
+    window.remarkSelections = state.selected.slice();
+    const ta = document.getElementById('bhRemarks');
+    if(ta) ta.value = state.manual.join('\n');
+    renderRemarkButtonsStable();
+  }
+
+  async function workbookBlobForBorings(borings, settings){
+    const wb = typeof window.buildGintWorkbook === 'function' ? window.buildGintWorkbook(borings, settings || {}) : null;
+    if(!wb || typeof wb !== 'object' || !wb.SheetNames || !wb.Sheets) throw new Error('Field/geotherm workbook could not be built');
+    const buf = XLSX.write(wb, { bookType:'xlsx', type:'array' });
+    return new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  }
+
+  async function workbookBlobForBoring(b, settings){
+    if(isWellLike(b?.header?.logType || 'field')){
+      if(typeof window.buildExactWellTemplateBlob === 'function') return await window.buildExactWellTemplateBlob(b, settings || {});
+      if(typeof window.buildExactWellTemplateBlobFixed === 'function') return await window.buildExactWellTemplateBlobFixed(b, settings || {});
+      const wb = typeof window.buildWellWorkbookFromTemplate === 'function' ? window.buildWellWorkbookFromTemplate(b, settings || {}) : null;
+      if(!wb) throw new Error('Well workbook build failed');
+      const buf = XLSX.write(wb, { bookType:'xlsx', type:'array' });
+      return new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    }
+    return workbookBlobForBorings([b], settings);
+  }
+
+  async function saveAndExportStable(){
+    try{
+      if(typeof window.syncReviewTimeFields === 'function') window.syncReviewTimeFields();
+      if(typeof window.saveBoringHeader === 'function'){
+        const ok = await window.saveBoringHeader();
+        if(ok === false) return;
+      }
+      if(window.currentBoring?.header){
+        Object.assign(window.currentBoring.header, currentHeaderFromDom());
+        window.currentBoring.header.generalRemarks = orderedRemarksStable();
+      }
+      if(typeof window.renderReviewScreen === 'function') window.renderReviewScreen();
+      const settings = typeof window.getSettings === 'function' ? await window.getSettings() : {};
+      const blob = await workbookBlobForBoring(window.currentBoring, settings);
+      const label = isWellLike(window.currentBoring?.header?.logType || 'field') ? 'Well Installation Log' : 'Field Log';
+      await window.downloadBlob(blob, window.buildExportFileName(window.currentBoring, label, 'xlsx'));
+      if(typeof window.toast === 'function') window.toast(isWellLike(window.currentBoring?.header?.logType || 'field') ? 'Well log exported' : 'Field log exported');
+      if(typeof window.showScreen === 'function') window.showScreen('home');
+      if(typeof window.hydrateHome === 'function') await window.hydrateHome();
+    } catch(err){ console.error(err); if(typeof window.hideExportProgress==='function') window.hideExportProgress(); if(typeof window.toast==='function') window.toast(err?.message || 'Export failed', true); }
+  }
+
+  function dataUrlMime(dataUrl){ const m=String(dataUrl||'').match(/^data:([^;]+);/i); return (m && m[1]) || 'image/jpeg'; }
+  function extensionFromMime(mime){ const norm=String(mime||'').toLowerCase(); if(norm.includes('png')) return 'png'; if(norm.includes('webp')) return 'webp'; if(norm.includes('gif')) return 'gif'; if(norm.includes('heic')) return 'heic'; if(norm.includes('heif')) return 'heif'; return 'jpg'; }
+  function choosePhotoDataUrl(photo, mode){ if(!photo) return ''; if(mode==='original') return photo.photoDataUrl || photo.photoEditedDataUrl || ''; return photo.photoEditedDataUrl || photo.photoDataUrl || ''; }
+  function sampleFileBase(boring, sample, idx, photoCounter){
+    const type = sample?.sampleType || (window.inferSampleType ? window.inferSampleType(sample) : 'standard');
+    const num = window.formatSampleNumber ? window.formatSampleNumber(sample?.number || `${type === 'grab' ? 'GB' : (type === 'shelby' ? 'U' : 'S')}-${idx+1}`, type) : (sample?.number || `S-${idx+1}`);
+    return window.safeFileName(`${boring?.header?.pointId || 'boring'} ${num} ${photoCounter}`);
+  }
+
+  async function exportBundleZipForBoringsStable(borings, settings, filenameBase){
+    if(!(borings||[]).length){ if(typeof window.toast==='function') window.toast('No borings to export', true); return; }
+    try{
+      if(typeof window.setExportProgress==='function') window.setExportProgress(2, 'Loading ZIP tools…');
+      if(typeof window.ensureJSZip === 'function') await window.ensureJSZip();
+      if(!window.JSZip) throw new Error('ZIP library failed to load');
+      const zip = new window.JSZip();
+      const baseRoot = window.safeFileName(filenameBase || ((borings.length === 1 ? borings[0]?.header?.pointId : 'all_borings') || 'borings'));
+      const root = zip.folder(baseRoot);
+      const photosOrigRoot = root.folder('Photos').folder('Original');
+      const photosCropRoot = root.folder('Photos').folder('Cropped');
+
+      const fieldBorings = (borings||[]).filter(b=>!isWellLike(b?.header?.logType || 'field'));
+      if(fieldBorings.length){
+        if(typeof window.setExportProgress==='function') window.setExportProgress(8, 'Building field log…');
+        const fieldBlob = await workbookBlobForBorings(fieldBorings, settings);
+        const fieldName = fieldBorings.length === 1 ? window.buildExportFileName(fieldBorings[0], 'Field Log', 'xlsx') : window.safeFileName(`${window.nowETInput().slice(0,10).replace(/-/g,'_')} All Borings Field Log.xlsx`);
+        root.file(fieldName, fieldBlob, { compression:'STORE' });
+      }
+
+      const wellBorings = (borings||[]).filter(b=>isWellLike(b?.header?.logType || 'field'));
+      for(const b of wellBorings){
+        const blob = await workbookBlobForBoring(b, settings);
+        root.file(window.buildExportFileName(b, 'Well Installation Log', 'xlsx'), blob, { compression:'STORE' });
+      }
+
+      const allSamples = (borings||[]).flatMap(b => (b.samples||[]).map((s, idx) => ({ boring:b, sample:s, idx })));
+      const totalSteps = Math.max(1, allSamples.length + (borings||[]).length + wellBorings.length + (fieldBorings.length?1:0));
+      let done = fieldBorings.length?1:0;
+
+      for(const b of (borings||[])){
+        const boringName = window.safeFileName(b?.header?.pointId || 'boring');
+        if(b?.patchPhoto){
+          const cropMime = dataUrlMime(b.patchPhoto);
+          photosCropRoot.file(`${boringName} Patch Photo.${extensionFromMime(cropMime)}`, window.dataUrlToUint8Array(b.patchPhoto), { compression:'STORE' });
+        }
+        done += 1;
+        if(typeof window.setExportProgress==='function') window.setExportProgress(8 + Math.round((done / totalSteps) * 78), `Collecting photos for ${boringName}…`);
+      }
+
+      for(const entry of allSamples){
+        const { boring:b, sample:s, idx } = entry;
+        const photos = Array.isArray(s?.photos) ? s.photos : [];
+        let photoCounter = 0;
+        for(const p of photos){
+          photoCounter += 1;
+          const baseName = sampleFileBase(b, s, idx, photoCounter);
+          const orig = choosePhotoDataUrl(p, 'original');
+          const crop = choosePhotoDataUrl(p, 'cropped');
+          if(orig){
+            const mime = dataUrlMime(orig);
+            photosOrigRoot.file(`${baseName}.${extensionFromMime(mime)}`, window.dataUrlToUint8Array(orig), { compression:'STORE' });
+          }
+          if(crop){
+            const mime = dataUrlMime(crop);
+            photosCropRoot.file(`${baseName}.${extensionFromMime(mime)}`, window.dataUrlToUint8Array(crop), { compression:'STORE' });
+          }
+        }
+        done += 1;
+        if(typeof window.setExportProgress==='function') window.setExportProgress(8 + Math.round((done / totalSteps) * 78), `Packing ${b?.header?.pointId || 'boring'} sample ${idx+1}…`);
+      }
+
+      if(typeof window.setExportProgress==='function') window.setExportProgress(92, 'Building ZIP file…');
+      const blob = await zip.generateAsync({ type:'blob', compression:'STORE' }, meta=>{
+        const pct = 92 + Math.round((Number(meta.percent || 0) / 100) * 7);
+        if(typeof window.setExportProgress==='function') window.setExportProgress(pct, `Building ZIP… ${Math.round(Number(meta.percent || 0))}%`);
+      });
+      const zipName = window.safeFileName(`${baseRoot} Export Bundle.zip`);
+      if(typeof window.setExportProgress==='function') window.setExportProgress(99, 'Starting download…');
+      await window.downloadBlob(blob, zipName);
+      if(typeof window.setExportProgress==='function') window.setExportProgress(100, 'Share sheet opened');
+      if(typeof window.hideExportProgress==='function') setTimeout(window.hideExportProgress, 400);
+      if(typeof window.toast==='function') window.toast('ZIP bundle ready');
+    } catch(err){ console.error(err); if(typeof window.hideExportProgress==='function') window.hideExportProgress(); if(typeof window.toast==='function') window.toast(err?.message || 'ZIP bundle export failed', true); }
+  }
+
+  function patchCore(){
+    ensureRemarkOptions();
+    ensureLogTypeOptions();
+    cleanupWellDefaults();
+    window.renderRemarkButtons = renderRemarkButtonsStable;
+    window.parseRemarkState = parseSavedRemarks;
+    window.orderedRemarks = orderedRemarksStable;
+    window.formattedGeneralRemarks = function(h){ return uniqueLines(h?.generalRemarks || '').map((line,i)=>`${i+1}. ${line}`); };
+    window.buildWellRemarksList = function(b){ const h=b?.header||{}; return uniqueLines(h.wellRemarks || '', h.generalRemarks || ''); };
+
+    const oldFill = window.fillBoringForm;
+    if(oldFill && !oldFill.__cleaned){
+      const wrapped = function(){
+        const out = oldFill.apply(this, arguments);
+        ensureLogTypeOptions();
+        cleanupWellDefaults();
+        const sel = document.getElementById('bhLogType');
+        if(sel && window.currentBoring?.header?.logType) sel.value = window.currentBoring.header.logType;
+        syncRemarkUiFromSaved();
+        if(typeof window.updateWellFieldsVisibility === 'function') window.updateWellFieldsVisibility();
+        return out;
+      };
+      wrapped.__cleaned = true;
+      window.fillBoringForm = wrapped;
+    }
+
+    const oldCollect = window.collectBoringForm;
+    if(oldCollect && !oldCollect.__cleaned){
+      const wrapped = function(){
+        const out = oldCollect.apply(this, arguments);
+        if(window.currentBoring?.header){
+          Object.assign(window.currentBoring.header, currentHeaderFromDom());
+          window.currentBoring.header.generalRemarks = orderedRemarksStable();
+        }
+        return out;
+      };
+      wrapped.__cleaned = true;
+      window.collectBoringForm = wrapped;
+    }
+
+    const oldUpdate = window.updateWellFieldsVisibility;
+    if(oldUpdate && !oldUpdate.__cleaned){
+      const wrapped = function(){
+        const out = oldUpdate.apply(this, arguments);
+        ensureLogTypeOptions();
+        cleanupWellDefaults();
+        const logType = document.getElementById('bhLogType')?.value || (window.currentBoring?.header?.logType || 'field');
+        const well = document.getElementById('wellFieldsCard');
+        const geo = document.getElementById('geothermCard');
+        if(well) well.classList.toggle('hidden', !isWellLike(logType));
+        if(geo) geo.classList.toggle('hidden', !isGeothermLike(logType));
+        return out;
+      };
+      wrapped.__cleaned = true;
+      window.updateWellFieldsVisibility = wrapped;
+    }
+
+    const oldNext = window.nextSuggestion;
+    if(oldNext && !oldNext.__cleaned){
+      const wrapped = function(samples, sampleType='standard'){
+        const out = oldNext.apply(this, arguments);
+        const logType = document.getElementById('bhLogType')?.value || (window.currentBoring?.header?.logType || 'field');
+        if(sampleType === 'standard' && isGeothermLike(logType)){
+          const startDepth = Number(document.getElementById('bhGeothermStartDepth')?.value || window.currentBoring?.header?.geothermStartDepth);
+          const interval = Number(document.getElementById('bhGeothermInterval')?.value || window.currentBoring?.header?.geothermInterval || 2);
+          const normalized = (samples || []).map(s => window.normalizeSample ? window.normalizeSample(s) : s);
+          const standards = normalized.filter(s => (s.sampleType || (window.inferSampleType ? window.inferSampleType(s) : 'standard')) === 'standard');
+          const top = standards.length ? Math.max(...standards.map(s => Number(s.bottomDepth) || 0)) : (Number.isFinite(startDepth) ? startDepth : out.top);
+          out.top = top;
+          out.bottom = top + (Number.isFinite(interval) && interval > 0 ? interval : 2);
+        }
+        return out;
+      };
+      wrapped.__cleaned = true;
+      window.nextSuggestion = wrapped;
+    }
+
+    window.saveAndExportCurrentBoring = saveAndExportStable;
+    const saveBtn = document.getElementById('saveExportReview'); if(saveBtn) saveBtn.onclick = saveAndExportStable;
+    const wellBtn = document.getElementById('exportWellReview'); if(wellBtn) wellBtn.onclick = saveAndExportStable;
+    const allZipBtn = document.getElementById('exportAllZipBundle');
+    if(allZipBtn) allZipBtn.onclick = async()=>{
+      const settings = typeof window.getSettings === 'function' ? await window.getSettings() : {};
+      const borings = Array.isArray(window.reportData?.borings) ? window.reportData.borings : [];
+      await exportBundleZipForBoringsStable(borings, settings, 'all_borings');
+    };
+    const reviewZipBtn = document.getElementById('exportReviewZipBundle');
+    if(reviewZipBtn) reviewZipBtn.onclick = async()=>{
+      const settings = typeof window.getSettings === 'function' ? await window.getSettings() : {};
+      await exportBundleZipForBoringsStable([window.currentBoring], settings, window.currentBoring?.header?.pointId || 'boring');
+    };
+    if(typeof window.updateWellFieldsVisibility === 'function') window.updateWellFieldsVisibility();
+    syncRemarkUiFromSaved();
+  }
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', patchCore);
+  else patchCore();
 })();
 </script>
 
